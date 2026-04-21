@@ -1,0 +1,18 @@
+[
+  {
+    "id": "mp_001",
+    "nombre": "Efectivo"
+  },
+  {
+    "id": "mp_002",
+    "nombre": "Transferencia"
+  },
+  {
+    "id": "mp_003",
+    "nombre": "Débito"
+  },
+  {
+    "id": "mp_004",
+    "nombre": "Crédito"
+  }
+]

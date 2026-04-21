@@ -1,0 +1,170 @@
+[
+  {
+    "id": "art_001",
+    "codigo": "agua",
+    "nombre": "Agua 500ml",
+    "categoria": "bebidas",
+    "precio": 5000,
+    "stock": 100
+  },
+  {
+    "id": "art_002",
+    "codigo": "jugo_gaseosa",
+    "nombre": "Jugo / Gaseosa",
+    "categoria": "bebidas",
+    "precio": 5000,
+    "stock": 100
+  },
+  {
+    "id": "art_003",
+    "codigo": "speed",
+    "nombre": "Speed",
+    "categoria": "bebidas",
+    "precio": 5000,
+    "stock": 100
+  },
+  {
+    "id": "art_004",
+    "codigo": "cerveza",
+    "nombre": "Cerveza",
+    "categoria": "bebidas",
+    "precio": 6000,
+    "stock": 50
+  },
+  {
+    "id": "art_005",
+    "codigo": "fernet",
+    "nombre": "Fernet Branca",
+    "categoria": "bebidas",
+    "precio": 10000,
+    "stock": 20
+  },
+  {
+    "id": "art_006",
+    "codigo": "gin",
+    "nombre": "Gin",
+    "categoria": "bebidas",
+    "precio": 10000,
+    "stock": 20
+  },
+  {
+    "id": "art_007",
+    "codigo": "vodka",
+    "nombre": "Vodka",
+    "categoria": "bebidas",
+    "precio": 10000,
+    "stock": 20
+  },
+  {
+    "id": "art_008",
+    "codigo": "jagermeister",
+    "nombre": "Jägermeister",
+    "categoria": "bebidas",
+    "precio": 15000,
+    "stock": 15
+  },
+  {
+    "id": "art_009",
+    "codigo": "absolut",
+    "nombre": "Absolut",
+    "categoria": "bebidas",
+    "precio": 15000,
+    "stock": 15
+  },
+  {
+    "id": "art_010",
+    "codigo": "chandon",
+    "nombre": "Chandon",
+    "categoria": "bebidas",
+    "precio": 30000,
+    "stock": 10
+  },
+  {
+    "id": "art_011",
+    "codigo": "promo_2x_branca",
+    "nombre": "Promo 2x Branca",
+    "categoria": "promos",
+    "precio": 18000,
+    "stock": 10
+  },
+  {
+    "id": "art_012",
+    "codigo": "promo_2x_jager",
+    "nombre": "Promo 2x Jägermeister",
+    "categoria": "promos",
+    "precio": 24000,
+    "stock": 10
+  },
+  {
+    "id": "art_013",
+    "codigo": "promo_2x_absolut",
+    "nombre": "Promo 2x Absolut",
+    "categoria": "promos",
+    "precio": 24000,
+    "stock": 10
+  },
+  {
+    "id": "art_014",
+    "codigo": "promo_2x_gin",
+    "nombre": "Promo 2x Gin",
+    "categoria": "promos",
+    "precio": 18000,
+    "stock": 10
+  },
+  {
+    "id": "art_015",
+    "codigo": "barco_vodka",
+    "nombre": "Barco de Vodka",
+    "categoria": "combos",
+    "precio": 45000,
+    "stock": 5
+  },
+  {
+    "id": "art_016",
+    "codigo": "barco_absolut",
+    "nombre": "Barco Absolut",
+    "categoria": "combos",
+    "precio": 90000,
+    "stock": 5
+  },
+  {
+    "id": "art_017",
+    "codigo": "barco_jager",
+    "nombre": "Barco Jägermeister",
+    "categoria": "combos",
+    "precio": 100000,
+    "stock": 5
+  },
+  {
+    "id": "art_018",
+    "codigo": "hielo",
+    "nombre": "Hielo",
+    "categoria": "extras",
+    "precio": 2000,
+    "stock": 200
+  },
+  {
+    "id": "art_019",
+    "codigo": "hamburguesa_simple",
+    "nombre": "Hamburguesa Simple",
+    "categoria": "hamburguesas",
+    "precio": 12000,
+    "stock": 30
+  },
+  {
+    "id": "art_020",
+    "codigo": "hamburguesa_doble",
+    "nombre": "Hamburguesa Doble",
+    "categoria": "hamburguesas",
+    "precio": 15000,
+    "stock": 30
+  },
+  {
+    "id": "art_021",
+    "codigo": "hamburguesa_especial",
+    "nombre": "Hamburguesa Especial",
+    "categoria": "hamburguesas",
+    "precio": 18000,
+    "stock": 20
+  }
+]
