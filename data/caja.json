@@ -1,0 +1,13 @@
+{
+  "abierta": false,
+  "fechaApertura": null,
+  "saldoInicial": 0,
+  "ventas": [],
+  "ventasEfectivo": 0,
+  "ventasTransferencia": 0,
+  "ventasDebito": 0,
+  "ventasCredito": 0,
+  "total": 0,
+  "fechaCierre": null,
+  "saldoReal": 0
+}

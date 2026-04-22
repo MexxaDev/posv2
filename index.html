@@ -6,16 +6,17 @@
   <title>GG Beach House - POS</title>
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#6366f1">
+  <meta name="theme-color" content="#FFFFFF">
   <meta name="description" content="Sistema de Punto de Venta - GG Beach House">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+  <script src="js/lib/chart.min.js"></script>
 </head>
 
 <body>
-  <div id="app" class="app-layout">
+  <div id="app">
     <div id="mainContent"></div>
   </div>
   <div id="toast" class="toast"></div>
@@ -27,11 +28,15 @@
   <script src="js/services/ventasService.js"></script>
   <script src="js/services/mediosPagoService.js"></script>
   <script src="js/services/datosNegocioService.js"></script>
+  <script src="js/services/cajaService.js"></script>
+  <script src="js/services/whatsappService.js"></script>
+  <script src="js/services/categoriasService.js"></script>
 
   <script src="js/components/router.js"></script>
   <script src="js/components/sidebar.js"></script>
   <script src="js/components/header.js"></script>
   <script src="js/components/modal.js"></script>
+  <script src="js/components/topNav.js"></script>
 
   <script src="js/pages/login.js"></script>
   <script src="js/pages/pos.js"></script>

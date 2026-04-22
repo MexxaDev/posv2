@@ -1,0 +1,92 @@
+[
+  {
+    "id": 1,
+    "nombre": "Coca Cola 500ml",
+    "categoria": "Bebidas sin alcohol",
+    "codigo_barras": "7790895000782",
+    "precio": 1500,
+    "stock": 50,
+    "imagen": "https://jumboargentina.vtexassets.com/arquivos/ids/123456/coca-cola-500ml.jpg"
+  },
+  {
+    "id": 2,
+    "nombre": "Agua Villa del Sur 500ml",
+    "categoria": "Bebidas sin alcohol",
+    "codigo_barras": "7790315000443",
+    "precio": 900,
+    "stock": 60,
+    "imagen": "https://jumboargentina.vtexassets.com/arquivos/ids/123457/agua-villa-del-sur.jpg"
+  },
+  {
+    "id": 3,
+    "nombre": "Papas Lays Clásicas 45g",
+    "categoria": "Snacks",
+    "codigo_barras": "7790310001234",
+    "precio": 1200,
+    "stock": 40,
+    "imagen": "https://jumboargentina.vtexassets.com/arquivos/ids/123458/lays-clasicas.jpg"
+  },
+  {
+    "id": 4,
+    "nombre": "Chicles Beldent Menta",
+    "categoria": "Golosinas",
+    "codigo_barras": "7790580100012",
+    "precio": 700,
+    "stock": 100,
+    "imagen": "https://jumboargentina.vtexassets.com/arquivos/ids/123459/beldent.jpg"
+  },
+  {
+    "id": 5,
+    "nombre": "Caramelos Arcor Masticables",
+    "categoria": "Golosinas",
+    "codigo_barras": "7790580003456",
+    "precio": 500,
+    "stock": 120,
+    "imagen": "https://jumboargentina.vtexassets.com/arquivos/ids/123460/arcor-caramelos.jpg"
+  },
+  {
+    "id": 6,
+    "nombre": "Galletitas Oreo 118g",
+    "categoria": "Galletitas",
+    "codigo_barras": "7622210659867",
+    "precio": 1800,
+    "stock": 35,
+    "imagen": "https://jumboargentina.vtexassets.com/arquivos/ids/123461/oreo.jpg"
+  },
+  {
+    "id": 7,
+    "nombre": "Leche La Serenísima 1L",
+    "categoria": "Lácteos",
+    "codigo_barras": "7793940001001",
+    "precio": 1400,
+    "stock": 45,
+    "imagen": "https://jumboargentina.vtexassets.com/arquivos/ids/123462/leche.jpg"
+  },
+  {
+    "id": 8,
+    "nombre": "Yerba Playadito 1kg",
+    "categoria": "Almacén",
+    "codigo_barras": "7793704000010",
+    "precio": 5500,
+    "stock": 25,
+    "imagen": "https://jumboargentina.vtexassets.com/arquivos/ids/123463/playadito.jpg"
+  },
+  {
+    "id": 9,
+    "nombre": "Arroz Gallo Oro 1kg",
+    "categoria": "Almacén",
+    "codigo_barras": "7790387001010",
+    "precio": 2000,
+    "stock": 30,
+    "imagen": "https://jumboargentina.vtexassets.com/arquivos/ids/123464/arroz.jpg"
+  },
+  {
+    "id": 10,
+    "nombre": "Detergente Magistral 500ml",
+    "categoria": "Limpieza",
+    "codigo_barras": "7791290001234",
+    "precio": 1600,
+    "stock": 20,
+    "imagen": "https://jumboargentina.vtexassets.com/arquivos/ids/123465/magistral.jpg"
+  }
+]

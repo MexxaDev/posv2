@@ -1,6 +1,68 @@
 [
   {
+    "id": "cli_default",
+    "nombreCliente": "Consumidor Final",
+    "telefono": "",
+    "direccion": "",
+    "deuda": 0,
+    "totalGastado": 0,
+    "visitas": 0,
+    "fechaAlta": "2024-01-01T00:00:00.000Z",
+    "fechaUltimaCompra": null
+  },
+  {
     "id": "cli_001",
-    "nombreCliente": "Cliente Mostrador"
+    "nombreCliente": "Cliente Mostrador",
+    "telefono": "",
+    "direccion": "",
+    "deuda": 0,
+    "totalGastado": 0,
+    "visitas": 0,
+    "fechaAlta": "2024-01-01T00:00:00.000Z",
+    "fechaUltimaCompra": null
+  },
+  {
+    "id": "cli_002",
+    "nombreCliente": "Juan Pérez",
+    "telefono": "3492123456",
+    "direccion": "Buenos Aires 123",
+    "deuda": 0,
+    "totalGastado": 12500,
+    "visitas": 15,
+    "fechaAlta": "2024-01-15T00:00:00.000Z",
+    "fechaUltimaCompra": "2024-03-20T18:30:00.000Z"
+  },
+  {
+    "id": "cli_003",
+    "nombreCliente": "María García",
+    "telefono": "3492567890",
+    "direccion": "San Martín 456",
+    "deuda": 0,
+    "totalGastado": 8320,
+    "visitas": 8,
+    "fechaAlta": "2024-02-01T00:00:00.000Z",
+    "fechaUltimaCompra": "2024-03-19T14:20:00.000Z"
+  },
+  {
+    "id": "cli_004",
+    "nombreCliente": "Pedro López",
+    "telefono": "3492987654",
+    "direccion": "Rivadavia 789",
+    "deuda": 0,
+    "totalGastado": 4500,
+    "visitas": 5,
+    "fechaAlta": "2024-02-10T00:00:00.000Z",
+    "fechaUltimaCompra": "2024-03-18T20:45:00.000Z"
+  },
+  {
+    "id": "cli_005",
+    "nombreCliente": "Ana Rodríguez",
+    "telefono": "3492345678",
+    "direccion": "25 de Mayo 321",
+    "deuda": 0,
+    "totalGastado": 2200,
+    "visitas": 3,
+    "fechaAlta": "2024-03-01T00:00:00.000Z",
+    "fechaUltimaCompra": "2024-03-15T19:00:00.000Z"
   }
 ]

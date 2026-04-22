@@ -1,8 +1,18 @@
 const DashboardPage = {
   activeTab: 'metricas',
+  filtros: {},
+  charts: {},
 
   async init() {
     if (!Router.requireAuth(null, 'admin')) return;
+    
+    const hoy = new Date().toISOString().split('T')[0];
+    this.filtros = {
+      fechaInicio: hoy,
+      fechaFin: hoy,
+      periodo: 'hoy'
+    };
+    
     this.render();
     await this.loadData();
     this.setupEvents();
@@ -11,14 +21,41 @@ const DashboardPage = {
   async render() {
     const main = document.getElementById('mainContent');
     main.innerHTML = `
-      <div class="dashboard-page">
-        <div class="tabs">
-          <button class="tab active" data-tab="metricas">Métricas</button>
-          <button class="tab" data-tab="articulos">Artículos</button>
-          <button class="tab" data-tab="clientes">Clientes</button>
-          <button class="tab" data-tab="medios">Medios de Pago</button>
-          <button class="tab" data-tab="ventas">Ventas</button>
-          <button class="tab" data-tab="negocio">Negocio</button>
+      <div class="dashboard-apple">
+        <div class="dashboard-header-apple">
+          <h1 class="dashboard-title-apple">Dashboard</h1>
+          <p class="dashboard-subtitle-apple">Resumen de tu negocio</p>
+        </div>
+
+        <div class="tabs-apple">
+          <button class="tab-apple active" data-tab="metricas">
+            <i class="ti ti-chart-bar"></i>
+            Métricas
+          </button>
+          <button class="tab-apple" data-tab="articulos">
+            <i class="ti ti-box"></i>
+            Artículos
+          </button>
+          <button class="tab-apple" data-tab="categorias">
+            <i class="ti ti-tag"></i>
+            Categorías
+          </button>
+          <button class="tab-apple" data-tab="clientes">
+            <i class="ti ti-users"></i>
+            Clientes
+          </button>
+          <button class="tab-apple" data-tab="medios">
+            <i class="ti ti-credit-card"></i>
+            Medios de Pago
+          </button>
+          <button class="tab-apple" data-tab="ventas">
+            <i class="ti ti-receipt"></i>
+            Ventas
+          </button>
+          <button class="tab-apple" data-tab="negocio">
+            <i class="ti ti-settings"></i>
+            Negocio
+          </button>
         </div>
 
         <div id="tabContent"></div>
@@ -32,115 +69,284 @@ const DashboardPage = {
 
   async renderMetricas() {
     const content = document.getElementById('tabContent');
+    const filtros = this.filtros;
+    const medios = await MediosPagoService.getNombres();
 
-    const totalVentas = await VentasService.getTotalVentas();
-    const ingresosDia = await VentasService.getIngresosDelDia();
+    content.innerHTML = `
+      <div class="filters-apple">
+        <div class="filter-group-apple">
+          <label>Período</label>
+          <select id="filtroPeriodo">
+            <option value="hoy" ${filtros.periodo === 'hoy' ? 'selected' : ''}>Hoy</option>
+            <option value="ayer" ${filtros.periodo === 'ayer' ? 'selected' : ''}>Ayer</option>
+            <option value="semana" ${filtros.periodo === 'semana' ? 'selected' : ''}>Esta semana</option>
+            <option value="mes" ${filtros.periodo === 'mes' ? 'selected' : ''}>Este mes</option>
+            <option value="personalizado" ${filtros.periodo === 'personalizado' ? 'selected' : ''}>Personalizado</option>
+          </select>
+        </div>
+        <div class="filter-group-apple filter-dates-apple" style="display: ${filtros.periodo === 'personalizado' ? 'flex' : 'none'}">
+          <input type="date" id="filtroFechaInicio" value="${filtros.fechaInicio}">
+          <span>hasta</span>
+          <input type="date" id="filtroFechaFin" value="${filtros.fechaFin}">
+        </div>
+        <div class="filter-group-apple">
+          <label>Método</label>
+          <select id="filtroMedio">
+            <option value="">Todos</option>
+            ${medios.map(m => `<option value="${m}" ${filtros.medioPago === m ? 'selected' : ''}>${m}</option>`).join('')}
+          </select>
+        </div>
+        <div class="filter-group-apple">
+          <label>Cliente</label>
+          <input type="text" id="filtroCliente" placeholder="Buscar..." value="${filtros.cliente || ''}">
+        </div>
+        <div class="filter-actions-apple">
+          <button class="apple-btn apple-btn-primary" id="btnAplicarFiltros">
+            <i class="ti ti-check"></i>
+            Aplicar
+          </button>
+          <button class="apple-btn apple-btn-secondary" id="btnLimpiarFiltros">
+            <i class="ti ti-x"></i>
+            Limpiar
+          </button>
+        </div>
+      </div>
+
+      <div class="metrics-grid-apple">
+        <div class="metric-card-apple">
+          <div class="metric-icon-apple">
+            <i class="ti ti-shopping-cart"></i>
+          </div>
+          <div class="metric-info-apple">
+            <span class="metric-value-apple" id="metricVentas">0</span>
+            <span class="metric-label-apple">Ventas</span>
+          </div>
+        </div>
+
+        <div class="metric-card-apple">
+          <div class="metric-icon-apple">
+            <i class="ti ti-cash"></i>
+          </div>
+          <div class="metric-info-apple">
+            <span class="metric-value-apple" id="metricIngresos">$0</span>
+            <span class="metric-label-apple">Ingresos</span>
+          </div>
+        </div>
+
+        <div class="metric-card-apple">
+          <div class="metric-icon-apple">
+            <i class="ti ti-receipt"></i>
+          </div>
+          <div class="metric-info-apple">
+            <span class="metric-value-apple" id="metricTicketProm">$0</span>
+            <span class="metric-label-apple">Ticket Prom.</span>
+          </div>
+        </div>
+
+        <div class="metric-card-apple">
+          <div class="metric-icon-apple">
+            <i class="ti ti-packages"></i>
+          </div>
+          <div class="metric-info-apple">
+            <span class="metric-value-apple" id="metricItemsProm">0</span>
+            <span class="metric-label-apple">Items/Venta</span>
+          </div>
+        </div>
+
+        <div class="metric-card-apple">
+          <div class="metric-icon-apple">
+            <i class="ti ti-box"></i>
+          </div>
+          <div class="metric-info-apple">
+            <span class="metric-value-apple" id="metricStock">0</span>
+            <span class="metric-label-apple">Stock Total</span>
+          </div>
+        </div>
+
+        <div class="metric-card-apple">
+          <div class="metric-icon-apple">
+            <i class="ti ti-user"></i>
+          </div>
+          <div class="metric-info-apple">
+            <span class="metric-value-apple" id="metricClientes">0</span>
+            <span class="metric-label-apple">Clientes</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-grid-apple">
+        <div class="chart-card-apple">
+          <div class="chart-title-apple">Top 10 Productos</div>
+          <canvas id="chartTopProductos" height="120"></canvas>
+        </div>
+        <div class="chart-card-apple">
+          <div class="chart-title-apple">Ventas por Hora</div>
+          <canvas id="chartPorHora" height="120"></canvas>
+        </div>
+        <div class="chart-card-apple">
+          <div class="chart-title-apple">Medios de Pago</div>
+          <canvas id="chartMedios" height="120"></canvas>
+        </div>
+        <div class="chart-card-apple">
+          <div class="chart-title-apple">Últimos 7 días</div>
+          <canvas id="chartVentas" height="120"></canvas>
+        </div>
+      </div>
+
+      <div class="apple-card">
+        <div class="apple-card-header">
+          <h3 class="apple-card-title">
+            <i class="ti ti-user"></i>
+            Top 10 Clientes
+          </h3>
+        </div>
+        <div class="apple-card-body">
+          <div id="topClientesTable"></div>
+        </div>
+      </div>
+
+      <div class="apple-card">
+        <div class="apple-card-header">
+          <h3 class="apple-card-title">
+            <i class="ti ti-activity"></i>
+            Actividad Reciente
+          </h3>
+          <div class="header-actions-apple">
+            <button class="apple-btn apple-btn-secondary" id="btnExportarPDF">
+              <i class="ti ti-file"></i>
+              PDF
+            </button>
+            <button class="apple-btn apple-btn-secondary" id="btnExportarCSV">
+              <i class="ti ti-file-spreadsheet"></i>
+              CSV
+            </button>
+          </div>
+        </div>
+        <div class="apple-card-body">
+          <div id="actividadReciente"></div>
+        </div>
+      </div>
+    `;
+
+    await this.cargarMetricas(filtros);
+    this.setupFiltrosEvents();
+  },
+
+  async cargarMetricas(filtros) {
+    const [ventas, ticketProm, itemsProm, topProductos, topClientes, ventasPorHora] = await Promise.all([
+      VentasService.getCantidadVentas(filtros),
+      VentasService.getTicketPromedio(filtros),
+      VentasService.getItemsPromedio(filtros),
+      VentasService.getTopProductos(10, filtros),
+      VentasService.getTopClientes(10, filtros),
+      VentasService.getVentasPorHora(filtros)
+    ]);
+
+    const ingresos = await VentasService.getIngresosPorRango(filtros);
     const productosStock = await ArticulosService.getTotalStock();
     const clientesCount = await ClientesService.getCount();
     const ventasUltimosDias = await VentasService.getVentasUltimosDias(7);
     const mediosPago = await VentasService.getEstadisticasMediosPago();
 
-    content.innerHTML = `
-      <div class="dashboard-header">
-        <h2 class="page-title">Dashboard</h2>
-        <p class="text-muted">Resumen de tu negocio</p>
-      </div>
+    document.getElementById('metricVentas').textContent = ventas;
+    document.getElementById('metricIngresos').textContent = '$' + ingresos.toLocaleString('es-AR');
+    document.getElementById('metricTicketProm').textContent = '$' + ticketProm.toLocaleString('es-AR');
+    document.getElementById('metricItemsProm').textContent = itemsProm;
+    document.getElementById('metricStock').textContent = productosStock;
+    document.getElementById('metricClientes').textContent = clientesCount;
 
-      <div class="metrics-grid">
-        <div class="metric-card metric-sales">
-          <div class="metric-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 3h18v18H3z"></path>
-              <path d="M3 9h18"></path>
-              <path d="M9 21V9"></path>
-            </svg>
-          </div>
-          <div class="metric-info">
-            <span class="metric-value">${totalVentas}</span>
-            <span class="metric-label">Total Ventas</span>
-          </div>
-        </div>
-
-        <div class="metric-card metric-income">
-          <div class="metric-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="1" x2="12" y2="23"></line>
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-            </svg>
-          </div>
-          <div class="metric-info">
-            <span class="metric-value">$${ingresosDia.toLocaleString('es-AR')}</span>
-            <span class="metric-label">Ingresos del Día</span>
-          </div>
-        </div>
-
-        <div class="metric-card metric-products">
-          <div class="metric-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-            </svg>
-          </div>
-          <div class="metric-info">
-            <span class="metric-value">${productosStock}</span>
-            <span class="metric-label">Productos en Stock</span>
-          </div>
-        </div>
-
-        <div class="metric-card metric-clients">
-          <div class="metric-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-          </div>
-          <div class="metric-info">
-            <span class="metric-value">${clientesCount}</span>
-            <span class="metric-label">Clientes</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="charts-grid">
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Ventas últimos 7 días</h3>
-          </div>
-          <canvas id="chartVentas" height="200"></canvas>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Medios de Pago</h3>
-          </div>
-          <canvas id="chartMedios" height="200"></canvas>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">Actividad Reciente</h3>
-        </div>
-        <div id="actividadReciente"></div>
-      </div>
-    `;
-
-    this.renderChartVentas(ventasUltimosDias);
+    this.renderChartTopProductos(topProductos);
+    this.renderChartPorHora(ventasPorHora);
     this.renderChartMedios(mediosPago);
-    await this.renderActividadReciente();
+    this.renderChartVentas(ventasUltimosDias);
+    this.renderTopClientesTable(topClientes);
+    await this.renderActividadReciente(filtros);
+  },
+
+  renderChartTopProductos(data) {
+    const ctx = document.getElementById('chartTopProductos');
+    if (!ctx || !data.length) return;
+    
+    if (this.charts.topProductos) this.charts.topProductos.destroy();
+
+    this.charts.topProductos = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.map(d => d.nombre.substring(0, 12)),
+        datasets: [{
+          label: 'Cantidad',
+          data: data.map(d => d.cantidad),
+          backgroundColor: '#6366f1',
+          borderRadius: 4
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true } }
+      }
+    });
+  },
+
+  renderChartPorHora(data) {
+    const ctx = document.getElementById('chartPorHora');
+    if (!ctx) return;
+    
+    if (this.charts.porHora) this.charts.porHora.destroy();
+
+    this.charts.porHora = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.map((_, i) => `${i}h`),
+        datasets: [{
+          label: 'Ingresos',
+          data: data.map(d => d.monto),
+          backgroundColor: '#10b981',
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+  },
+
+  renderChartMedios(data) {
+    const ctx = document.getElementById('chartMedios');
+    if (!ctx) return;
+    
+    if (this.charts.medios) this.charts.medios.destroy();
+
+    const labels = Object.keys(data);
+    const values = Object.values(data);
+    const colors = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+    this.charts.medios = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{ data: values, backgroundColor: colors.slice(0, labels.length) }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 6, font: { size: 10 } } } }
+      }
+    });
   },
 
   renderChartVentas(data) {
     const ctx = document.getElementById('chartVentas');
     if (!ctx) return;
+    
+    if (this.charts.ventas) this.charts.ventas.destroy();
 
-    new Chart(ctx, {
+    this.charts.ventas = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: data.map(d => {
-          const fecha = new Date(d.fecha);
-          return fecha.toLocaleDateString('es-AR', { weekday: 'short' });
-        }),
+        labels: data.map(d => new Date(d.fecha).toLocaleDateString('es-AR', { weekday: 'short' })),
         datasets: [{
           label: 'Ventas',
           data: data.map(d => d.monto),
@@ -152,67 +358,57 @@ const DashboardPage = {
       },
       options: {
         responsive: true,
-        plugins: {
-          legend: { display: false }
-        },
-        scales: {
-          y: { beginAtZero: true }
-        }
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
       }
     });
   },
 
-  renderChartMedios(data) {
-    const ctx = document.getElementById('chartMedios');
-    if (!ctx) return;
+  renderTopClientesTable(data) {
+    const container = document.getElementById('topClientesTable');
+    if (!container) return;
+    
+    if (!data.length) {
+      container.innerHTML = '<div class="empty-state"><p>No hay clientes</p></div>';
+      return;
+    }
 
-    const labels = Object.keys(data);
-    const values = Object.values(data);
-    const colors = ['#10b981', '#6366f1', '#f59e0b', '#ef4444'];
-
-    new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: labels,
-        datasets: [{
-          data: values,
-          backgroundColor: colors.slice(0, labels.length)
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { position: 'bottom' }
-        }
-      }
-    });
+    container.innerHTML = `
+      <table class="table-apple">
+        <thead><tr><th>#</th><th>Cliente</th><th>Compras</th><th>Total</th></tr></thead>
+        <tbody>
+          ${data.map((c, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${c.nombre}</td>
+              <td>${c.ventas}</td>
+              <td>$${c.monto.toLocaleString('es-AR')}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
   },
 
-  async renderActividadReciente() {
+  async renderActividadReciente(filtros) {
     const container = document.getElementById('actividadReciente');
-    const ventas = await VentasService.getAll();
-    const recientes = ventas.slice(-10).reverse();
+    const ventas = await VentasService.getVentasFiltradas(filtros);
+    const recientes = ventas.slice(-15).reverse();
 
-    if (recientes.length === 0) {
+    if (!recientes.length) {
       container.innerHTML = '<div class="empty-state"><p>No hay ventas registradas</p></div>';
       return;
     }
 
     container.innerHTML = `
-      <table>
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Cliente</th>
-            <th>Monto</th>
-            <th>Método</th>
-          </tr>
-        </thead>
+      <table class="table-apple">
+        <thead><tr><th>Fecha</th><th>Cliente</th><th>Items</th><th>Monto</th><th>Método</th></tr></thead>
         <tbody>
           ${recientes.map(v => `
             <tr>
               <td>${new Date(v.fecha).toLocaleString('es-AR')}</td>
               <td>${v.cliente}</td>
+              <td>${v.items?.length || 0}</td>
               <td>$${v.monto.toLocaleString('es-AR')}</td>
               <td>${v.medioPago}</td>
             </tr>
@@ -222,33 +418,77 @@ const DashboardPage = {
     `;
   },
 
+  setupFiltrosEvents() {
+    document.getElementById('filtroPeriodo')?.addEventListener('change', (e) => {
+      const periodo = e.target.value;
+      const hoy = new Date().toISOString().split('T')[0];
+      
+      if (periodo === 'hoy') {
+        this.filtros = { fechaInicio: hoy, fechaFin: hoy, periodo: 'hoy' };
+      } else if (periodo === 'ayer') {
+        const ayer = new Date();
+        ayer.setDate(ayer.getDate() - 1);
+        const fecha = ayer.toISOString().split('T')[0];
+        this.filtros = { fechaInicio: fecha, fechaFin: fecha, periodo: 'ayer' };
+      } else if (periodo === 'semana') {
+        const inicio = new Date();
+        inicio.setDate(inicio.getDate() - inicio.getDay());
+        this.filtros = { fechaInicio: inicio.toISOString().split('T')[0], fechaFin: hoy, periodo: 'semana' };
+      } else if (periodo === 'mes') {
+        const inicio = new Date(hoy.substring(0, 7) + '-01');
+        this.filtros = { fechaInicio: inicio.toISOString().split('T')[0], fechaFin: hoy, periodo: 'mes' };
+      } else {
+        this.filtros.periodo = 'personalizado';
+      }
+      
+      this.renderMetricas();
+    });
+
+    document.getElementById('btnAplicarFiltros')?.addEventListener('click', async () => {
+      this.filtros.periodo = 'personalizado';
+      this.filtros.fechaInicio = document.getElementById('filtroFechaInicio').value;
+      this.filtros.fechaFin = document.getElementById('filtroFechaFin').value;
+      this.filtros.medioPago = document.getElementById('filtroMedio').value;
+      this.filtros.cliente = document.getElementById('filtroCliente').value;
+      
+      await this.cargarMetricas(this.filtros);
+    });
+
+    document.getElementById('btnLimpiarFiltros')?.addEventListener('click', async () => {
+      const hoy = new Date().toISOString().split('T')[0];
+      this.filtros = { fechaInicio: hoy, fechaFin: hoy, periodo: 'hoy' };
+      this.renderMetricas();
+    });
+
+    document.getElementById('btnExportarPDF')?.addEventListener('click', async () => {
+      await VentasService.generarReportePDF(this.filtros);
+    });
+
+    document.getElementById('btnExportarCSV')?.addEventListener('click', async () => {
+      await VentasService.descargarCSV(this.filtros);
+    });
+  },
+
   async renderArticulos() {
     const content = document.getElementById('tabContent');
     const articulos = await ArticulosService.getAll();
 
     content.innerHTML = `
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">Gestión de Artículos</h3>
-          <button class="btn btn-primary" id="btnNuevoArticulo">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Nuevo Artículo
+      <div class="apple-card">
+        <div class="apple-card-header">
+          <h3 class="apple-card-title">
+            <i class="ti ti-box"></i>
+            Gestión de Artículos
+          </h3>
+          <button class="apple-btn apple-btn-primary" id="btnNuevoArticulo">
+            <i class="ti ti-plus"></i>
+            Nuevo
           </button>
         </div>
-        <div class="table-container">
-          <table>
+        <div class="apple-card-body">
+          <table class="table-apple">
             <thead>
-              <tr>
-                <th>Código</th>
-                <th>Nombre</th>
-                <th>Categoría</th>
-                <th>Precio</th>
-                <th>Stock</th>
-                <th>Acciones</th>
-              </tr>
+              <tr><th>Código</th><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Acciones</th></tr>
             </thead>
             <tbody id="articulosTable"></tbody>
           </table>
@@ -266,12 +506,16 @@ const DashboardPage = {
       <tr>
         <td>${a.codigo}</td>
         <td>${a.nombre}</td>
-        <td><span class="badge badge-success">${a.categoria}</span></td>
+        <td><span class="badge">${a.categoria}</span></td>
         <td>$${a.precio.toLocaleString('es-AR')}</td>
         <td>${a.stock}</td>
         <td>
-          <button class="btn btn-sm btn-secondary" data-action="edit" data-id="${a.id}">Editar</button>
-          <button class="btn btn-sm btn-danger" data-action="delete" data-id="${a.id}">Eliminar</button>
+          <button class="apple-btn apple-btn-secondary" data-action="edit" data-id="${a.id}">
+            <i class="ti ti-pencil"></i>
+          </button>
+          <button class="apple-btn" style="background: var(--error); color: white;" data-action="delete" data-id="${a.id}">
+            <i class="ti ti-trash"></i>
+          </button>
         </td>
       </tr>
     `).join('');
@@ -291,7 +535,7 @@ const DashboardPage = {
         const articulo = await ArticulosService.getById(id);
         this.mostrarFormularioArticulo(articulo);
       } else if (action === 'delete') {
-        const confirm = await Modal.confirm('¿Estás seguro de eliminar este artículo?');
+        const confirm = await Modal.confirm('¿Eliminar este artículo?');
         if (confirm) {
           await ArticulosService.delete(id);
           Modal.alert('Artículo eliminado', 'success');
@@ -317,7 +561,7 @@ const DashboardPage = {
         <div class="form-row">
           <div class="input-group">
             <label>Categoría</label>
-            <input type="text" name="categoria" value="${articulo?.categoria || ''}" placeholder="bebidas, promos, etc.">
+            <input type="text" name="categoria" value="${articulo?.categoria || ''}">
           </div>
           <div class="input-group">
             <label>Precio</label>
@@ -343,10 +587,7 @@ const DashboardPage = {
     });
 
     document.getElementById('btnGuardar')?.addEventListener('click', async () => {
-      const form = document.getElementById('articuloForm');
-      const formData = new FormData(form);
-      const data = Object.fromEntries(formData);
-
+      const data = Object.fromEntries(new FormData(document.getElementById('articuloForm')));
       if (articulo) {
         await ArticulosService.update(articulo.id, data);
         Modal.alert('Artículo actualizado', 'success');
@@ -354,7 +595,6 @@ const DashboardPage = {
         await ArticulosService.create(data);
         Modal.alert('Artículo creado', 'success');
       }
-
       Modal.close(modal);
       this.renderArticulos();
     });
@@ -367,48 +607,37 @@ const DashboardPage = {
     const clientes = await ClientesService.getAll();
 
     content.innerHTML = `
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">Gestión de Clientes</h3>
-          <button class="btn btn-primary" id="btnNuevoCliente">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Nuevo Cliente
+      <div class="apple-card">
+        <div class="apple-card-header">
+          <h3 class="apple-card-title">
+            <i class="ti ti-users"></i>
+            Gestión de Clientes
+          </h3>
+          <button class="apple-btn apple-btn-primary" id="btnNuevoCliente">
+            <i class="ti ti-plus"></i>
+            Nuevo
           </button>
         </div>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
+        <div class="apple-card-body">
+          <table class="table-apple">
+            <thead><tr><th>Nombre</th><th>Acciones</th></tr></thead>
             <tbody id="clientesTable"></tbody>
           </table>
         </div>
       </div>
     `;
 
-    this.renderClientesTable(clientes);
-    this.setupClientesEvents();
-  },
-
-  renderClientesTable(clientes) {
-    const tbody = document.getElementById('clientesTable');
-    tbody.innerHTML = clientes.map(c => `
+    document.getElementById('clientesTable').innerHTML = clientes.map(c => `
       <tr>
         <td>${c.nombreCliente}</td>
         <td>
-          <button class="btn btn-sm btn-danger" data-action="delete" data-id="${c.id}">Eliminar</button>
+          <button class="apple-btn" style="background: var(--error); color: white;" data-action="delete" data-id="${c.id}">
+            <i class="ti ti-trash"></i>
+          </button>
         </td>
       </tr>
     `).join('');
-  },
 
-  setupClientesEvents() {
     document.getElementById('btnNuevoCliente')?.addEventListener('click', () => this.mostrarFormularioCliente());
 
     document.getElementById('clientesTable')?.addEventListener('click', async (e) => {
@@ -418,7 +647,6 @@ const DashboardPage = {
       const confirm = await Modal.confirm('¿Eliminar este cliente?');
       if (confirm) {
         await ClientesService.delete(btn.dataset.id);
-        Modal.alert('Cliente eliminado', 'success');
         this.renderClientes();
       }
     });
@@ -446,17 +674,12 @@ const DashboardPage = {
     });
 
     document.getElementById('btnGuardar')?.addEventListener('click', async () => {
-      const form = document.getElementById('clienteForm');
-      const data = Object.fromEntries(new FormData(form));
-
+      const data = Object.fromEntries(new FormData(document.getElementById('clienteForm')));
       if (cliente) {
         await ClientesService.update(cliente.id, data);
-        Modal.alert('Cliente actualizado', 'success');
       } else {
         await ClientesService.create(data);
-        Modal.alert('Cliente creado', 'success');
       }
-
       Modal.close(modal);
       this.renderClientes();
     });
@@ -469,58 +692,46 @@ const DashboardPage = {
     const medios = await MediosPagoService.getAll();
 
     content.innerHTML = `
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">Medios de Pago</h3>
-          <button class="btn btn-primary" id="btnNuevoMedio">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Nuevo Método
+      <div class="apple-card">
+        <div class="apple-card-header">
+          <h3 class="apple-card-title">
+            <i class="ti ti-credit-card"></i>
+            Medios de Pago
+          </h3>
+          <button class="apple-btn apple-btn-primary" id="btnNuevoMedio">
+            <i class="ti ti-plus"></i>
+            Nuevo
           </button>
         </div>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
+        <div class="apple-card-body">
+          <table class="table-apple">
+            <thead><tr><th>Nombre</th><th>Acciones</th></tr></thead>
             <tbody id="mediosTable"></tbody>
           </table>
         </div>
       </div>
     `;
 
-    this.renderMediosTable(medios);
-    this.setupMediosEvents();
-  },
-
-  renderMediosTable(medios) {
-    const tbody = document.getElementById('mediosTable');
-    tbody.innerHTML = medios.map(m => `
+    document.getElementById('mediosTable').innerHTML = medios.map(m => `
       <tr>
         <td>${m.nombre}</td>
         <td>
-          <button class="btn btn-sm btn-danger" data-action="delete" data-id="${m.id}">Eliminar</button>
+          <button class="apple-btn" style="background: var(--error); color: white;" data-action="delete" data-id="${m.id}">
+            <i class="ti ti-trash"></i>
+          </button>
         </td>
       </tr>
     `).join('');
-  },
 
-  setupMediosEvents() {
     document.getElementById('btnNuevoMedio')?.addEventListener('click', () => this.mostrarFormularioMedio());
 
     document.getElementById('mediosTable')?.addEventListener('click', async (e) => {
       const btn = e.target.closest('button');
       if (!btn || btn.dataset.action !== 'delete') return;
 
-      const confirm = await Modal.confirm('¿Eliminar este método de pago?');
+      const confirm = await Modal.confirm('¿Eliminar método?');
       if (confirm) {
         await MediosPagoService.delete(btn.dataset.id);
-        Modal.alert('Método eliminado', 'success');
         this.renderMediosPago();
       }
     });
@@ -530,7 +741,7 @@ const DashboardPage = {
     const content = `
       <form id="medioForm">
         <div class="input-group">
-          <label>Nombre del Método de Pago</label>
+          <label>Nombre</label>
           <input type="text" name="nombre" value="${medio?.nombre || ''}" required>
         </div>
       </form>
@@ -542,23 +753,18 @@ const DashboardPage = {
     ];
 
     const modal = Modal.show({
-      title: medio ? 'Editar Método' : 'Nuevo Método de Pago',
+      title: medio ? 'Editar Método' : 'Nuevo Método',
       content,
       buttons
     });
 
     document.getElementById('btnGuardar')?.addEventListener('click', async () => {
-      const form = document.getElementById('medioForm');
-      const data = Object.fromEntries(new FormData(form));
-
+      const data = Object.fromEntries(new FormData(document.getElementById('medioForm')));
       if (medio) {
         await MediosPagoService.update(medio.id, data);
-        Modal.alert('Método actualizado', 'success');
       } else {
         await MediosPagoService.create(data);
-        Modal.alert('Método creado', 'success');
       }
-
       Modal.close(modal);
       this.renderMediosPago();
     });
@@ -571,22 +777,20 @@ const DashboardPage = {
     const ventas = (await VentasService.getAll()).reverse();
 
     content.innerHTML = `
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">Historial de Ventas</h3>
-          <button class="btn btn-secondary" id="btnExportarVentas">Exportar CSV</button>
+      <div class="apple-card">
+        <div class="apple-card-header">
+          <h3 class="apple-card-title">
+            <i class="ti ti-receipt"></i>
+            Historial de Ventas
+          </h3>
+          <button class="apple-btn apple-btn-secondary" id="btnExportarVentas">
+            <i class="ti ti-file-spreadsheet"></i>
+            Exportar CSV
+          </button>
         </div>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Fecha</th>
-                <th>Cliente</th>
-                <th>Monto</th>
-                <th>Método</th>
-              </tr>
-            </thead>
+        <div class="apple-card-body">
+          <table class="table-apple">
+            <thead><tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Monto</th><th>Método</th></tr></thead>
             <tbody id="ventasTable"></tbody>
           </table>
         </div>
@@ -595,10 +799,10 @@ const DashboardPage = {
 
     const tbody = document.getElementById('ventasTable');
     tbody.innerHTML = ventas.length === 0
-      ? '<tr><td colspan="5" class="text-center">No hay ventas</td></tr>'
+      ? '<tr><td colspan="5" class="empty-state">No hay ventas</td></tr>'
       : ventas.map(v => `
         <tr>
-          <td>${v.idVenta.substring(0, 12)}...</td>
+          <td>${v.idVenta.substring(0, 8)}...</td>
           <td>${new Date(v.fecha).toLocaleString('es-AR')}</td>
           <td>${v.cliente}</td>
           <td>$${v.monto.toLocaleString('es-AR')}</td>
@@ -614,27 +818,41 @@ const DashboardPage = {
     const datos = await DatosNegocioService.get();
 
     content.innerHTML = `
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">Datos del Negocio</h3>
+      <div class="apple-card">
+        <div class="apple-card-header">
+          <h3 class="apple-card-title">
+            <i class="ti ti-settings"></i>
+            Datos del Negocio
+          </h3>
         </div>
-        <form id="negocioForm">
-          <div class="form-row">
-            <div class="input-group">
-              <label>Nombre</label>
-              <input type="text" name="nombre" value="${datos.nombre}">
+        <div class="apple-card-body">
+          <form id="negocioForm">
+            <div class="form-row">
+              <div class="input-group">
+                <label>Nombre</label>
+                <input type="text" name="nombre" value="${datos.nombre}">
+              </div>
+              <div class="input-group">
+                <label>Teléfono</label>
+                <input type="text" name="telefono" value="${datos.telefono || ''}">
+              </div>
             </div>
-            <div class="input-group">
-              <label>Teléfono</label>
-              <input type="text" name="telefono" value="${datos.telefono || ''}">
+            <div class="form-row">
+              <div class="input-group">
+                <label>WhatsApp</label>
+                <input type="text" name="whatsapp" value="${datos.whatsapp || ''}">
+              </div>
+              <div class="input-group">
+                <label>Dirección</label>
+                <input type="text" name="direccion" value="${datos.direccion || ''}">
+              </div>
             </div>
-          </div>
-          <div class="input-group">
-            <label>Dirección</label>
-            <input type="text" name="direccion" value="${datos.direccion || ''}">
-          </div>
-          <button type="submit" class="btn btn-primary">Guardar Cambios</button>
-        </form>
+            <button type="submit" class="apple-btn apple-btn-primary">
+              <i class="ti ti-check"></i>
+              Guardar
+            </button>
+          </form>
+        </div>
       </div>
     `;
 
@@ -646,35 +864,123 @@ const DashboardPage = {
     });
   },
 
+  async renderCategorias() {
+    const content = document.getElementById('tabContent');
+    const categorias = await CategoriasService.getAll();
+
+    content.innerHTML = `
+      <div class="apple-card">
+        <div class="apple-card-header">
+          <h3 class="apple-card-title">
+            <i class="ti ti-tag"></i>
+            Gestión de Categorías
+          </h3>
+          <button class="apple-btn apple-btn-primary" id="btnNuevaCategoria">
+            <i class="ti ti-plus"></i>
+            Nueva
+          </button>
+        </div>
+        <div class="apple-card-body">
+          <table class="table-apple">
+            <thead><tr><th>Color</th><th>Nombre</th><th>Acciones</th></tr></thead>
+            <tbody id="categoriasTable"></tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('categoriasTable').innerHTML = categorias.map(c => `
+      <tr>
+        <td><span class="categoria-color" style="background: ${c.color}; width: 20px; height: 20px; border-radius: 50%; display: inline-block;"></span></td>
+        <td>${c.nombre}</td>
+        <td>
+          <button class="apple-btn" style="background: var(--error); color: white;" data-action="delete" data-id="${c.id}">
+            <i class="ti ti-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `).join('');
+
+    document.getElementById('btnNuevaCategoria')?.addEventListener('click', () => this.mostrarFormularioCategoria());
+
+    document.getElementById('categoriasTable')?.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button');
+      if (!btn || btn.dataset.action !== 'delete') return;
+
+      const confirm = await Modal.confirm('¿Eliminar?');
+      if (confirm) {
+        await CategoriasService.delete(btn.dataset.id);
+        this.renderCategorias();
+      }
+    });
+  },
+
+  mostrarFormularioCategoria(categoria = null) {
+    const content = `
+      <form id="categoriaForm">
+        <div class="form-row">
+          <div class="input-group">
+            <label>Nombre</label>
+            <input type="text" name="nombre" value="${categoria?.nombre || ''}" required>
+          </div>
+          <div class="input-group">
+            <label>Color</label>
+            <input type="color" name="color" value="${categoria?.color || '#6366f1'}">
+          </div>
+        </div>
+      </form>
+    `;
+
+    const buttons = [
+      { id: 'btnGuardar', text: 'Guardar', type: 'primary' },
+      { id: 'btnCancelar', text: 'Cancelar', type: 'secondary' }
+    ];
+
+    const modal = Modal.show({
+      title: categoria ? 'Editar' : 'Nueva Categoría',
+      content,
+      buttons
+    });
+
+    document.getElementById('btnGuardar')?.addEventListener('click', async () => {
+      const data = Object.fromEntries(new FormData(document.getElementById('categoriaForm')));
+      if (categoria) {
+        await CategoriasService.update(categoria.id, data);
+      } else {
+        await CategoriasService.create(data);
+      }
+      Modal.close(modal);
+      this.renderCategorias();
+    });
+
+    document.getElementById('btnCancelar')?.addEventListener('click', () => Modal.close(modal));
+  },
+
   setupEvents() {
-    document.querySelector('.tabs')?.addEventListener('click', async (e) => {
-      const tab = e.target.closest('.tab');
+    document.querySelector('.tabs-apple')?.addEventListener('click', async (e) => {
+      const tab = e.target.closest('.tab-apple');
       if (!tab) return;
 
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-apple').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
 
       const tabName = tab.dataset.tab;
 
+      Object.keys(this.charts).forEach(key => {
+        if (this.charts[key]) {
+          this.charts[key].destroy();
+          this.charts[key] = null;
+        }
+      });
+
       switch (tabName) {
-        case 'metricas':
-          await this.renderMetricas();
-          break;
-        case 'articulos':
-          await this.renderArticulos();
-          break;
-        case 'clientes':
-          await this.renderClientes();
-          break;
-        case 'medios':
-          await this.renderMediosPago();
-          break;
-        case 'ventas':
-          await this.renderVentas();
-          break;
-        case 'negocio':
-          await this.renderNegocio();
-          break;
+        case 'metricas': await this.renderMetricas(); break;
+        case 'articulos': await this.renderArticulos(); break;
+        case 'categorias': await this.renderCategorias(); break;
+        case 'clientes': await this.renderClientes(); break;
+        case 'medios': await this.renderMediosPago(); break;
+        case 'ventas': await this.renderVentas(); break;
+        case 'negocio': await this.renderNegocio(); break;
       }
     });
   }

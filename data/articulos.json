@@ -1,170 +1,92 @@
 [
   {
     "id": "art_001",
-    "codigo": "agua",
-    "nombre": "Agua 500ml",
-    "categoria": "bebidas",
-    "precio": 5000,
-    "stock": 100
-  },
-  {
-    "id": "art_002",
-    "codigo": "jugo_gaseosa",
-    "nombre": "Jugo / Gaseosa",
-    "categoria": "bebidas",
-    "precio": 5000,
-    "stock": 100
-  },
-  {
-    "id": "art_003",
-    "codigo": "speed",
-    "nombre": "Speed",
-    "categoria": "bebidas",
-    "precio": 5000,
-    "stock": 100
-  },
-  {
-    "id": "art_004",
-    "codigo": "cerveza",
-    "nombre": "Cerveza",
-    "categoria": "bebidas",
-    "precio": 6000,
+    "codigo": "coca_cola_500ml",
+    "nombre": "Coca Cola 500ml",
+    "categoria": "Bebidas sin alcohol",
+    "codigo_barras": "7790895000782",
+    "precio": 1500,
     "stock": 50
   },
   {
+    "id": "art_002",
+    "codigo": "agua_villa_sur_500ml",
+    "nombre": "Agua Villa del Sur 500ml",
+    "categoria": "Bebidas sin alcohol",
+    "codigo_barras": "7790315000443",
+    "precio": 900,
+    "stock": 60
+  },
+  {
+    "id": "art_003",
+    "codigo": "papas_lays_clasicas",
+    "nombre": "Papas Lays Clásicas 45g",
+    "categoria": "Snacks",
+    "codigo_barras": "7790310001234",
+    "precio": 1200,
+    "stock": 40
+  },
+  {
+    "id": "art_004",
+    "codigo": "chicles_beldent_menta",
+    "nombre": "Chicles Beldent Menta",
+    "categoria": "Golosinas",
+    "codigo_barras": "7790580100012",
+    "precio": 700,
+    "stock": 100
+  },
+  {
     "id": "art_005",
-    "codigo": "fernet",
-    "nombre": "Fernet Branca",
-    "categoria": "bebidas",
-    "precio": 10000,
-    "stock": 20
+    "codigo": "caramelos_arcor_masticables",
+    "nombre": "Caramelos Arcor Masticables",
+    "categoria": "Golosinas",
+    "codigo_barras": "7790580003456",
+    "precio": 500,
+    "stock": 120
   },
   {
     "id": "art_006",
-    "codigo": "gin",
-    "nombre": "Gin",
-    "categoria": "bebidas",
-    "precio": 10000,
-    "stock": 20
+    "codigo": "galletitas_oreo_118g",
+    "nombre": "Galletitas Oreo 118g",
+    "categoria": "Galletitas",
+    "codigo_barras": "7622210659867",
+    "precio": 1800,
+    "stock": 35
   },
   {
     "id": "art_007",
-    "codigo": "vodka",
-    "nombre": "Vodka",
-    "categoria": "bebidas",
-    "precio": 10000,
-    "stock": 20
+    "codigo": "leche_serenisima_1l",
+    "nombre": "Leche La Serenísima 1L",
+    "categoria": "Lácteos",
+    "codigo_barras": "7793940001001",
+    "precio": 1400,
+    "stock": 45
   },
   {
     "id": "art_008",
-    "codigo": "jagermeister",
-    "nombre": "Jägermeister",
-    "categoria": "bebidas",
-    "precio": 15000,
-    "stock": 15
+    "codigo": "yerba_playadito_1kg",
+    "nombre": "Yerba Playadito 1kg",
+    "categoria": "Almacén",
+    "codigo_barras": "7793704000010",
+    "precio": 5500,
+    "stock": 25
   },
   {
     "id": "art_009",
-    "codigo": "absolut",
-    "nombre": "Absolut",
-    "categoria": "bebidas",
-    "precio": 15000,
-    "stock": 15
+    "codigo": "arroz_gallo_oro_1kg",
+    "nombre": "Arroz Gallo Oro 1kg",
+    "categoria": "Almacén",
+    "codigo_barras": "7790387001010",
+    "precio": 2000,
+    "stock": 30
   },
   {
     "id": "art_010",
-    "codigo": "chandon",
-    "nombre": "Chandon",
-    "categoria": "bebidas",
-    "precio": 30000,
-    "stock": 10
-  },
-  {
-    "id": "art_011",
-    "codigo": "promo_2x_branca",
-    "nombre": "Promo 2x Branca",
-    "categoria": "promos",
-    "precio": 18000,
-    "stock": 10
-  },
-  {
-    "id": "art_012",
-    "codigo": "promo_2x_jager",
-    "nombre": "Promo 2x Jägermeister",
-    "categoria": "promos",
-    "precio": 24000,
-    "stock": 10
-  },
-  {
-    "id": "art_013",
-    "codigo": "promo_2x_absolut",
-    "nombre": "Promo 2x Absolut",
-    "categoria": "promos",
-    "precio": 24000,
-    "stock": 10
-  },
-  {
-    "id": "art_014",
-    "codigo": "promo_2x_gin",
-    "nombre": "Promo 2x Gin",
-    "categoria": "promos",
-    "precio": 18000,
-    "stock": 10
-  },
-  {
-    "id": "art_015",
-    "codigo": "barco_vodka",
-    "nombre": "Barco de Vodka",
-    "categoria": "combos",
-    "precio": 45000,
-    "stock": 5
-  },
-  {
-    "id": "art_016",
-    "codigo": "barco_absolut",
-    "nombre": "Barco Absolut",
-    "categoria": "combos",
-    "precio": 90000,
-    "stock": 5
-  },
-  {
-    "id": "art_017",
-    "codigo": "barco_jager",
-    "nombre": "Barco Jägermeister",
-    "categoria": "combos",
-    "precio": 100000,
-    "stock": 5
-  },
-  {
-    "id": "art_018",
-    "codigo": "hielo",
-    "nombre": "Hielo",
-    "categoria": "extras",
-    "precio": 2000,
-    "stock": 200
-  },
-  {
-    "id": "art_019",
-    "codigo": "hamburguesa_simple",
-    "nombre": "Hamburguesa Simple",
-    "categoria": "hamburguesas",
-    "precio": 12000,
-    "stock": 30
-  },
-  {
-    "id": "art_020",
-    "codigo": "hamburguesa_doble",
-    "nombre": "Hamburguesa Doble",
-    "categoria": "hamburguesas",
-    "precio": 15000,
-    "stock": 30
-  },
-  {
-    "id": "art_021",
-    "codigo": "hamburguesa_especial",
-    "nombre": "Hamburguesa Especial",
-    "categoria": "hamburguesas",
-    "precio": 18000,
+    "codigo": "detergente_magistral_500ml",
+    "nombre": "Detergente Magistral 500ml",
+    "categoria": "Limpieza",
+    "codigo_barras": "7791290001234",
+    "precio": 1600,
     "stock": 20
   }
 ]

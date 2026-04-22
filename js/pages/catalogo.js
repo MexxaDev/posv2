@@ -142,7 +142,9 @@ const CatalogoPage = {
   },
 
   async mostrarFormulario(articulo = null) {
-    const categorias = [...new Set(this.articulos.map(a => a.categoria))];
+    const catsDB = await CategoriasService.getAll();
+    const catsArticulos = [...new Set(this.articulos.map(a => a.categoria))];
+    const todasCategorias = [...new Set([...catsDB.map(c => c.nombre), ...catsArticulos])];
 
     const content = `
       <form id="articuloForm">
@@ -159,10 +161,10 @@ const CatalogoPage = {
         <div class="form-row">
           <div class="input-group">
             <label>Categoría</label>
-            <input type="text" name="categoria" value="${articulo?.categoria || ''}" list="categorias-list">
-            <datalist id="categorias-list">
-              ${categorias.map(c => `<option value="${c}">`).join('')}
-            </datalist>
+            <select name="categoria" required>
+              <option value="">Seleccionar categoría</option>
+              ${todasCategorias.map(c => `<option value="${c}" ${articulo?.categoria === c ? 'selected' : ''}>${c}</option>`).join('')}
+            </select>
           </div>
           <div class="input-group">
             <label>Precio</label>

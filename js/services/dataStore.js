@@ -43,10 +43,13 @@ const DataStore = {
   },
 
   async init() {
-    if (this.initialized) return;
+    if (this.initialized) {
+      console.log('DataStore: Ya inicializado');
+      return;
+    }
     console.log('DataStore: Inicializando datos desde archivos...');
 
-    const files = ['articulos.json', 'clientes.json', 'medios_pago.json', 'datos_negocio.json'];
+    const files = ['articulos.json', 'categorias.json', 'clientes.json', 'medios_pago.json', 'datos_negocio.json', 'caja.json'];
 
     for (const file of files) {
       const storageKey = this.storageKey + file;

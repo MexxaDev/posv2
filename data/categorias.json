@@ -1,0 +1,9 @@
+[
+  { "id": "cat_001", "nombre": "Bebidas sin alcohol", "color": "#3B82F6" },
+  { "id": "cat_002", "nombre": "Snacks", "color": "#F59E0B" },
+  { "id": "cat_003", "nombre": "Golosinas", "color": "#EC4899" },
+  { "id": "cat_004", "nombre": "Galletitas", "color": "#8B5CF6" },
+  { "id": "cat_005", "nombre": "Lácteos", "color": "#14B8A6" },
+  { "id": "cat_006", "nombre": "Almacén", "color": "#F97316" },
+  { "id": "cat_007", "nombre": "Limpieza", "color": "#EF4444" }
+]

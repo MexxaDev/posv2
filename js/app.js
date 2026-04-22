@@ -16,32 +16,38 @@ const App = {
   },
 
   async renderPOS() {
-    const sidebar = Sidebar.render();
-    const header = await Header.render();
+    const topNav = TopNav.render();
+    TopNav.setActive('pos');
+    
     document.getElementById('app').innerHTML = `
-      ${sidebar}
-      <div class="main-area">
-        ${header}
+      <div class="app-container">
+        ${topNav}
         <div id="mainContent"></div>
       </div>
     `;
-    Sidebar.initEvents();
+    TopNav.initEvents();
+    
+    const cajaAbierta = await CajaService.estaAbierta();
+    if (!cajaAbierta) {
+      await LoginPage.mostrarModalAperturaCaja();
+    }
+    
     await POSPage.init();
   },
 
   async renderDashboard() {
     if (!Router.requireAuth(null, 'admin')) return;
 
-    const sidebar = Sidebar.render();
-    const header = await Header.render();
+    const topNav = TopNav.render();
+    TopNav.setActive('dashboard');
+    
     document.getElementById('app').innerHTML = `
-      ${sidebar}
-      <div class="main-area">
-        ${header}
+      <div class="app-container">
+        ${topNav}
         <div id="mainContent"></div>
       </div>
     `;
-    Sidebar.initEvents();
+    TopNav.initEvents();
     await DashboardPage.init();
   },
 
@@ -58,6 +64,7 @@ const App = {
       </div>
     `;
     Sidebar.initEvents();
+    Header.initEvents();
     await CatalogoPage.init();
   }
 };
