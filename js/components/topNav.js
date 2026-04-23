@@ -5,7 +5,7 @@ const TopNav = {
     return `
       <nav class="top-nav">
         <div class="top-nav-brand">
-          <span class="top-nav-logo">GG Beach</span>
+          <span class="top-nav-logo">The West</span>
           <div class="top-nav-links">
             <a href="#pos" class="top-nav-link ${this.currentPage === 'pos' ? 'active' : ''}" data-page="pos">
               <i class="ti ti-point-of-sale"></i>

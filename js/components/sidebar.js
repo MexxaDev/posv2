@@ -18,6 +18,16 @@ const Sidebar = {
             <i class="ti ti-packages"></i>
             <span>Catálogo</span>
           </a>
+          <div class="sidebar-divider"></div>
+          <button class="sidebar-link" id="btnExport" title="Exportar datos">
+            <i class="ti ti-download"></i>
+            <span>Exportar</span>
+          </button>
+          <button class="sidebar-link" id="btnImport" title="Importar datos">
+            <i class="ti ti-upload"></i>
+            <span>Importar</span>
+          </button>
+          <div class="sidebar-divider"></div>
           <button class="sidebar-btn-logout" id="btnLogout">
             <i class="ti ti-logout"></i>
             <span>Salir</span>
@@ -33,6 +43,29 @@ const Sidebar = {
       logoutBtn.addEventListener('click', () => {
         AuthService.logout();
         Router.navigate('login');
+      });
+    }
+
+    const exportBtn = document.getElementById('btnExport');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', async () => {
+        if (confirm('¿Exportar todos los datos? Se descargará un archivo JSON.')) {
+          const success = await BackupService.exportData();
+          if (success) {
+            alert('Datos exportados correctamente.');
+          } else {
+            alert('Error al exportar datos.');
+          }
+        }
+      });
+    }
+
+    const importBtn = document.getElementById('btnImport');
+    if (importBtn) {
+      importBtn.addEventListener('click', () => {
+        if (confirm('⚠️ IMPORTANTE: Los datos actuales se reemplazarán con los del archivo.\n\n¿Continuar?')) {
+          BackupService.showImportDialog();
+        }
       });
     }
   }

@@ -11,31 +11,39 @@ const POSPage = {
   descuentoVisible: false,
   mediosPagoSeleccionados: [],
 
-  async init() {
-    await DataStore.init();
-    this.articulos = await ArticulosService.getAll();
-    this.categorias = await ArticulosService.getCategorias();
-    this.mediosPago = await MediosPagoService.getNombres();
-    
-    let clientes = await ClientesService.getAll();
-    let consumidorFinal = clientes.find(c => c.nombreCliente === 'Consumidor Final');
-    
-    if (!consumidorFinal) {
-      consumidorFinal = await ClientesService.create({
-        nombreCliente: 'Consumidor Final',
-        telefono: '',
-        direccion: ''
-      });
+async init() {
+    try {
+      await DataStore.init();
+      this.articulos = await ArticulosService.getAll();
+      this.categorias = await ArticulosService.getCategorias();
+      this.mediosPago = await MediosPagoService.getNombres();
+      
+      let clientes = await ClientesService.getAll();
+      let consumidorFinal = clientes.find(c => c.nombreCliente === 'Consumidor Final');
+      
+      if (!consumidorFinal) {
+        consumidorFinal = await ClientesService.create({
+          nombreCliente: 'Consumidor Final',
+          telefono: '',
+          direccion: ''
+        });
+      }
+      
+      if (consumidorFinal) {
+        this.clienteActual = consumidorFinal;
+      }
+      
+      this.mediosPagoSeleccionados = [{ medio: this.mediosPago[0] || 'Efectivo', monto: 0 }];
+      
+      this.render();
+      this.setupEvents();
+    } catch (e) {
+      console.error('POSPage init ERROR:', e);
+      const main = document.getElementById('mainContent');
+      if (main) {
+        main.innerHTML = '<div class="error-message">Error al cargar POS: ' + e.message + '</div>';
+      }
     }
-    
-    if (consumidorFinal) {
-      this.clienteActual = consumidorFinal;
-    }
-    
-    this.mediosPagoSeleccionados = [{ medio: this.mediosPago[0] || 'Efectivo', monto: 0 }];
-    
-    this.render();
-    this.setupEvents();
   },
 
   getSubtotal() {
@@ -88,7 +96,9 @@ const POSPage = {
               <i class="ti ti-shopping-cart"></i>
               Pedido Actual
             </h3>
-            <span class="order-panel-count" id="ordenCount">0 items</span>
+            <button class="btn-cerrar-caja-header" id="btnCerrarCajaHeader" title="Cerrar Caja">
+              <i class="ti ti-logout"></i>
+            </button>
           </div>
           
           <div class="orden-cliente-apple">
@@ -112,6 +122,9 @@ const POSPage = {
             <div class="order-summary-row total">
               <span>Total</span>
               <span id="totalOrden">${this.formatPrecio(this.getTotal())}</span>
+            </div>
+            <div class="order-summary-row items-count">
+              <span id="ordenCount">${this.carrito.reduce((s, i) => s + i.cantidad, 0)} items</span>
             </div>
           </div>
 
@@ -147,6 +160,11 @@ const POSPage = {
                 Método de Pago
               </label>
               <div id="mediosPagoContainer"></div>
+              <button class="btn-add-medio" id="btnAgregarMedio">
+                <i class="ti ti-plus"></i>
+                Agregar otro medio de pago
+              </button>
+              <div class="pago-validation" id="pagoValidation"></div>
             </div>
           </div>
 
@@ -337,6 +355,10 @@ const POSPage = {
 
     document.getElementById('btnCobrar')?.addEventListener('click', () => this.procesarVenta());
 
+    document.getElementById('btnCerrarCaja')?.addEventListener('click', () => this.mostrarCierreCaja());
+    
+    document.getElementById('btnCerrarCajaHeader')?.addEventListener('click', () => this.mostrarCierreCaja());
+
     document.getElementById('buscador')?.addEventListener('input', () => {
       this.renderProductos();
     });
@@ -373,6 +395,23 @@ const POSPage = {
       this.nota = e.target.value;
     });
 
+    document.getElementById('btnAgregarMedio')?.addEventListener('click', () => {
+      if (this.mediosPagoSeleccionados.length < this.mediosPago.length) {
+        const mediosDisponibles = this.mediosPago.filter(m => 
+          !this.mediosPagoSeleccionados.some(mp => mp.medio === m)
+        );
+        if (mediosDisponibles.length > 0) {
+          this.mediosPagoSeleccionados.push({
+            medio: mediosDisponibles[0],
+            monto: 0
+          });
+          this.renderMediosPago();
+          this.setupMediosPagoEvents();
+          this.actualizarPagoInfo();
+        }
+      }
+    });
+
     this.setupMediosPagoEvents();
   },
 
@@ -398,21 +437,26 @@ const POSPage = {
         this.mediosPagoSeleccionados.splice(index, 1);
         this.renderMediosPago();
         this.setupMediosPagoEvents();
+        this.actualizarPagoInfo();
       });
     });
   },
 
   actualizarPagoInfo() {
-    const pagoTotalEl = document.getElementById('pagoTotal');
-    const vueltoRow = document.getElementById('vueltoRow');
-    const vuelveMonto = document.getElementById('vueltoMonto');
+    const container = document.getElementById('pagoValidation');
+    const total = this.getTotal();
+    const pagoTotal = this.getPagoTotal();
+    const falta = total - pagoTotal;
 
-    if (pagoTotalEl) {
-      pagoTotalEl.textContent = this.formatPrecio(this.getPagoTotal());
-      pagoTotalEl.className = this.getPagoTotal() >= this.getTotal() ? 'text-success' : '';
+    if (container) {
+      if (pagoTotal < total) {
+        container.innerHTML = `<span class="pago-status incomplete">Falta: ${this.formatPrecio(falta)}</span>`;
+      } else if (pagoTotal > total) {
+        container.innerHTML = `<span class="pago-status excess">Exceso: ${this.formatPrecio(pagoTotal - total)}</span>`;
+      } else {
+        container.innerHTML = `<span class="pago-status complete"><i class="ti ti-check"></i> Monto exacto</span>`;
+      }
     }
-    if (vueltoRow) vuelveMonto.style.display = this.getVuelto() > 0 ? 'flex' : 'none';
-    if (vuelveMonto) vueltaMonto.textContent = this.formatPrecio(this.getVuelto());
   },
 
   limpiarPedido() {
@@ -603,10 +647,10 @@ const POSPage = {
     const venta = {
       clienteId: this.clienteActual?.id || null,
       cliente: this.clienteActual?.nombreCliente || 'Consumidor Final',
-      monto: montoTotal,
-      medioPago: mediosPagoFormateados[0].medio,
+      articulos: [...this.carrito],
+      items: this.carrito.reduce((sum, item) => sum + item.cantidad, 0),
+      montoTotal: montoTotal,
       mediosPago: mediosPagoFormateados,
-      items: [...this.carrito],
       nota: this.nota,
       descuento: this.getDescuento(),
       subtotal: this.getSubtotal(),
@@ -615,10 +659,7 @@ const POSPage = {
     };
 
     await VentasService.create(venta);
-    await CajaService.agregarVenta({
-      ...venta,
-      medioPago: venta.medioPago
-    });
+    await CajaService.agregarVenta(venta);
 
     if (this.clienteActual && this.clienteActual.nombreCliente !== 'Consumidor Final') {
       await ClientesService.registrarCompra(this.clienteActual.id, montoTotal);
@@ -638,6 +679,7 @@ const POSPage = {
       title: 'Ticket de Venta',
       content: this.generarHTMLTicket(venta),
       buttons: [
+        { id: 'btnImprimirTicket', text: '🖨 Imprimir', type: 'secondary' },
         { id: 'btnCerrarTicket', text: 'Cerrar', type: 'primary' }
       ]
     });
@@ -659,69 +701,204 @@ const POSPage = {
         this.setupEvents();
       });
     });
+
+    document.getElementById('btnImprimirTicket')?.addEventListener('click', () => {
+      const ticketContent = document.getElementById('ticketContent');
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Ticket - ${venta.idVenta}</title>
+            <style>
+              body { font-family: 'Courier New', monospace; padding: 20px; max-width: 300px; margin: 0 auto; }
+              .ticket print { padding: 10px; }
+            </style>
+          </head>
+          <body>${ticketContent?.innerHTML || ''}</body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    });
+  },
+
+  itemsHtml(articulos) {
+    if (!articulos || !articulos.length) return '';
+    return articulos.map(item => 
+      '<div class="ticket-item">' +
+        '<span class="ticket-item-name">' + item.nombre + '</span>' +
+        '<span class="ticket-item-qty">x' + item.cantidad + '</span>' +
+        '<span class="ticket-item-price">' + this.formatPrecio(item.precio * item.cantidad) + '</span>' +
+      '</div>'
+    ).join('');
+  },
+
+  mediosPagoHtml(mediosPago) {
+    if (!mediosPago || !mediosPago.length) return '-';
+    return mediosPago.map(mp => mp.medio + ': $' + mp.monto.toLocaleString('es-AR')).join(' + ');
   },
 
   generarHTMLTicket(venta) {
-    const datos = DatosNegocioService.getSync ? DatosNegocioService.getSync() : { nombre: 'GG Beach House', telefono: '', direccion: '' };
+    const datos = (typeof DatosNegocioService !== 'undefined') 
+      ? DatosNegocioService.getSync() 
+      : { nombre: 'GG Beach House', telefono: '', direccion: '' };
     
-    return `
-      <div style="padding: 20px; font-family: var(--font-family);">
-        <div style="text-align: center; margin-bottom: 20px;">
-          <h3 style="margin: 0 0 8px 0;">${datos.nombre}</h3>
-          ${datos.direccion ? `<p style="font-size: 12px; color: var(--apple-text-secondary);">${datos.direccion}</p>` : ''}
-          ${datos.telefono ? `<p style="font-size: 12px; color: var(--apple-text-secondary);">Tel: ${datos.telefono}</p>` : ''}
-        </div>
-        <div style="font-size: 12px; margin-bottom: 16px;">
-          <p><strong>Fecha:</strong> ${new Date(venta.fecha).toLocaleString('es-AR')}</p>
-          <p><strong>Cliente:</strong> ${venta.cliente}</p>
-          ${venta.nota ? `<p><strong>Nota:</strong> ${venta.nota}</p>` : ''}
-        </div>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
-          <thead>
-            <tr style="border-bottom: 1px solid var(--apple-border);">
-              <th style="text-align: left; padding: 8px 0;">Producto</th>
-              <th style="text-align: center; padding: 8px 0;">Cant</th>
-              <th style="text-align: right; padding: 8px 0;">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${venta.items.map(item => `
-              <tr>
-                <td style="padding: 6px 0;">${item.nombre}</td>
-                <td style="text-align: center; padding: 6px 0;">${item.cantidad}</td>
-                <td style="text-align: right; padding: 6px 0;">${this.formatPrecio(item.precio * item.cantidad)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-        <div style="border-top: 1px solid var(--apple-border); padding-top: 12px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span>Subtotal:</span>
-            <span>${this.formatPrecio(venta.subtotal)}</span>
-          </div>
-          ${venta.descuento > 0 ? `
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px; color: var(--error);">
-            <span>Descuento:</span>
-            <span>-${this.formatPrecio(venta.descuento)}</span>
-          </div>
-          ` : ''}
-          <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 18px;">
-            <span>TOTAL:</span>
-            <span>${this.formatPrecio(venta.monto)}</span>
-          </div>
-        </div>
-        <div style="margin-top: 16px; font-size: 12px; color: var(--apple-text-secondary); text-align: center;">
-          <p><strong>Pago:</strong> ${venta.mediosPago.map(mp => `${mp.medio}: $${mp.monto.toLocaleString('es-AR')}`).join(', ')}</p>
-        </div>
-        <div style="margin-top: 20px; text-align: center; font-size: 14px;">
-          <p>¡Gracias por su compra! 🎉</p>
-        </div>
-      </div>
-    `;
+    const descuentoHtml = venta.descuento > 0 
+      ? '<div class="ticket-summary-row" style="color: var(--error);"><span>Descuento:</span><span>-' + this.formatPrecio(venta.descuento) + '</span></div>' 
+      : '';
+    
+    return '<div id="ticketContent" class="ticket-modal" style="padding: 0; max-width: 320px; margin: 0 auto;">' +
+      '<div class="ticket-header">' +
+        '<h3>' + datos.nombre + '</h3>' +
+        (datos.direccion ? '<p>' + datos.direccion + '</p>' : '') +
+        (datos.telefono ? '<p>Tel: ' + datos.telefono + '</p>' : '') +
+      '</div>' +
+      '<div style="font-size: 11px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed #ccc;">' +
+        '<p style="margin: 4px 0;"><strong>Fecha:</strong> ' + new Date(venta.fecha).toLocaleString('es-AR') + '</p>' +
+        '<p style="margin: 4px 0;"><strong>Cliente:</strong> ' + venta.cliente + '</p>' +
+        (venta.nota ? '<p style="margin: 4px 0;"><strong>Nota:</strong> ' + venta.nota + '</p>' : '') +
+      '</div>' +
+      '<div class="ticket-items">' + this.itemsHtml(venta.articulos || []) + '</div>' +
+      '<div class="ticket-summary">' +
+        '<div class="ticket-summary-row"><span>Subtotal:</span><span>' + this.formatPrecio(venta.subtotal) + '</span></div>' +
+        descuentoHtml +
+        '<div class="ticket-summary-row total"><span>TOTAL:</span><span>' + this.formatPrecio(venta.montoTotal || venta.monto) + '</span></div>' +
+      '</div>' +
+      '<div class="ticket-footer">' +
+        '<p><strong>Pago:</strong> ' + this.mediosPagoHtml(venta.mediosPago) + '</p>' +
+        '<p style="margin-top: 16px;">¡Gracias por su compra!</p>' +
+      '</div>' +
+    '</div>';
   },
 
   formatPrecio(valor) {
     return '$' + valor.toLocaleString('es-AR');
+  },
+
+  async mostrarCierreCaja() {
+    const cajaAbierta = await CajaService.estaAbierta();
+    if (!cajaAbierta) {
+      Modal.alert('La caja no está abierta', 'error');
+      return;
+    }
+
+    const resumen = await CajaService.getResumen();
+    const content = `
+      <div class="cierre-caja-content">
+        <div class="cierre-resumen-row">
+          <span>Saldo Inicial</span>
+          <span>${this.formatPrecio(resumen.saldoInicial)}</span>
+        </div>
+        <div class="cierre-resumen-section">
+          <div class="cierre-section-title">Ventas por Método</div>
+          <div class="cierre-resumen-row">
+            <span>Efectivo</span>
+            <span>${this.formatPrecio(resumen.ventasEfectivo)}</span>
+          </div>
+          <div class="cierre-resumen-row">
+            <span>Transferencia</span>
+            <span>${this.formatPrecio(resumen.ventasTransferencia)}</span>
+          </div>
+          <div class="cierre-resumen-row">
+            <span>Débito</span>
+            <span>${this.formatPrecio(resumen.ventasDebito)}</span>
+          </div>
+          <div class="cierre-resumen-row">
+            <span>Crédito</span>
+            <span>${this.formatPrecio(resumen.ventasCredito)}</span>
+          </div>
+        </div>
+        <div class="cierre-resumen-row total">
+          <span>Total Ventas</span>
+          <span>${this.formatPrecio(resumen.totalVentas)}</span>
+        </div>
+        <div class="cierre-resumen-row">
+          <span>Saldo Teórico (efectivo)</span>
+          <span>${this.formatPrecio(resumen.saldoTeorico)}</span>
+        </div>
+        <div class="cierre-input-group">
+          <label>Monto_real_contado</label>
+          <input type="number" id="montoRealCierre" placeholder="Ingresá el monto en efectivo" autofocus>
+        </div>
+        <div class="cierre-diferencia" id="cierreDiferencia"></div>
+      </div>
+    `;
+
+const buttons = [
+      { id: 'btnConfirmarCierre', text: 'Cerrar Caja', type: 'primary' },
+      { id: 'btnWhatsAppCierre', text: 'Enviar por WhatsApp', type: 'secondary' },
+      { id: 'btnCancelarCierre', text: 'Cancelar', type: 'secondary' }
+    ];
+
+    const modal = Modal.show({
+      title: 'Cerrar Caja',
+      content,
+      buttons
+    });
+
+    document.getElementById('montoRealCierre')?.addEventListener('input', (e) => {
+      const montoReal = parseFloat(e.target.value) || 0;
+      const diferencia = montoReal - resumen.saldoTeorico;
+      const diffEl = document.getElementById('cierreDiferencia');
+      if (diffEl) {
+        if (diferencia === 0) {
+          diffEl.innerHTML = '<span class="diff-exact"><i class="ti ti-check"></i> Cuadre exacto</span>';
+        } else if (diferencia > 0) {
+          diffEl.innerHTML = '<span class="diff-excess">Sobra: ' + this.formatPrecio(diferencia) + '</span>';
+        } else {
+          diffEl.innerHTML = '<span class="diff-lack">Falta: ' + this.formatPrecio(Math.abs(diferencia)) + '</span>';
+        }
+      }
+    });
+
+    document.getElementById('btnConfirmarCierre')?.addEventListener('click', async () => {
+      const montoReal = parseFloat(document.getElementById('montoRealCierre').value) || 0;
+      await CajaService.cerrar(montoReal);
+      Modal.close(modal);
+      Modal.alert('Caja cerrada correctamente', 'success');
+    });
+
+    document.getElementById('btnWhatsAppCierre')?.addEventListener('click', async () => {
+      await this.enviarCierrePorWhatsApp(resumen);
+    });
+
+    document.getElementById('btnCancelarCierre')?.addEventListener('click', () => {
+      Modal.close(modal);
+    });
+  },
+
+  async enviarCierrePorWhatsApp(resumen) {
+    const datos = await DatosNegocioService.get();
+    const numero = datos.whatsapp || '';
+    
+    if (!numero) {
+      Modal.alert('No hay número de WhatsApp configurado en Datos del Negocio', 'error');
+      return;
+    }
+
+    const hoy = new Date().toLocaleDateString('es-AR', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+
+    const mensaje = '*CIERRE DE CAJA - ' + datos.nombre.toUpperCase() + '*' + '\n' +
+      'Fecha: ' + hoy + '\n\n' +
+      '_Ventas por Método_:' + '\n' +
+      '• Efectivo: ' + this.formatPrecio(resumen.ventasEfectivo) + '\n' +
+      '• Transferencia: ' + this.formatPrecio(resumen.ventasTransferencia) + '\n' +
+      '• Débito: ' + this.formatPrecio(resumen.ventasDebito) + '\n' +
+      '• Crédito: ' + this.formatPrecio(resumen.ventasCredito) + '\n\n' +
+      '_Totales_:' + '\n' +
+      '• Total Ventas: ' + this.formatPrecio(resumen.totalVentas) + '\n' +
+      '• Saldo Inicial: ' + this.formatPrecio(resumen.saldoInicial) + '\n' +
+      '• Saldo Teórico: ' + this.formatPrecio(resumen.saldoTeorico) + '\n' +
+      '• Cant. Ventas: ' + resumen.cantidadVentas;
+
+    const urlWhatsApp = 'https://wa.me/' + numero + '?text=' + encodeURIComponent(mensaje);
+    
+    window.open(urlWhatsApp, '_blank');
   }
 };
 

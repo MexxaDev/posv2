@@ -2,7 +2,9 @@ const VentasService = {
   filename: 'ventas.json',
 
   async getAll() {
-    return await DataStore.read(this.filename) || [];
+    const data = await DataStore.read(this.filename) || [];
+    console.log('VentasService.getAll():', data.length, 'ventas');
+    return data;
   },
 
   async create(data) {
@@ -11,19 +13,22 @@ const VentasService = {
       idVenta: DataStore.generateId('venta'),
       clienteId: data.clienteId || null,
       cliente: data.cliente || 'Cliente Mostrador',
-      items: data.items || [],
-      mediosPago: data.mediosPago || [{ medio: data.medioPago || 'Efectivo', monto: data.monto }],
+      articulos: data.articulos || data.items || [],
+      items: data.items || (data.articulos ? data.articulos.reduce((s, i) => s + (i.cantidad || 1), 0) : 0),
+      mediosPago: data.mediosPago || [{ medio: data.medioPago || 'Efectivo', monto: data.montoTotal || data.monto }],
       descuento: data.descuento || 0,
       subtotal: data.subtotal,
       nota: data.nota || '',
       tipo: data.tipo || 'mostrador',
-      monto: data.monto,
-      medioPago: data.medioPago,
+      monto: data.montoTotal || data.monto,
+      montoTotal: data.montoTotal || data.monto,
       fecha: data.fecha || new Date().toISOString(),
       usuario: data.usuario || 'sistema'
     };
     ventas.push(nueva);
+    console.log('VentasService.create(): guardando', nueva.idVenta, 'en array de', ventas.length, 'ventas');
     await DataStore.write(this.filename, ventas);
+    console.log('VentasService.create(): escrito correctamente');
     return nueva;
   },
 
@@ -45,7 +50,7 @@ const VentasService = {
 
   async getIngresosDelDia() {
     const ventas = await this.getVentasDelDia();
-    return ventas.reduce((sum, v) => sum + (v.monto || 0), 0);
+    return ventas.reduce((sum, v) => sum + (v.montoTotal || v.monto || 0), 0);
   },
 
   async getTotalVentas() {
@@ -80,7 +85,7 @@ const VentasService = {
       resultado.push({
         fecha: fechaStr,
         cantidad: ventasDia.length,
-        monto: ventasDia.reduce((sum, v) => sum + v.monto, 0)
+        monto: ventasDia.reduce((sum, v) => sum + (v.montoTotal || v.monto), 0)
       });
     }
     return resultado;
@@ -96,10 +101,10 @@ const VentasService = {
       });
     }
     
-    if (filtros.medioPago && filtros.medioPago.length > 0) {
+    if (filtros.medioPago && typeof filtros.medioPago === 'string' && filtros.medioPago.length > 0) {
       ventas = ventas.filter(v => {
         const medios = v.mediosPago?.map(mp => mp.medio) || [v.medioPago];
-        return filtros.medioPago.some(mp => medios.includes(mp));
+        return medios.includes(filtros.medioPago);
       });
     }
     
@@ -109,11 +114,11 @@ const VentasService = {
     }
     
     if (filtros.montoMin !== undefined && filtros.montoMin !== null && filtros.montoMin !== '') {
-      ventas = ventas.filter(v => v.monto >= filtros.montoMin);
+      ventas = ventas.filter(v => (v.montoTotal || v.monto) >= parseFloat(filtros.montoMin));
     }
     
     if (filtros.montoMax !== undefined && filtros.montoMax !== null && filtros.montoMax !== '') {
-      ventas = ventas.filter(v => v.monto <= filtros.montoMax);
+      ventas = ventas.filter(v => (v.montoTotal || v.monto) <= parseFloat(filtros.montoMax));
     }
     
     return ventas;
@@ -122,14 +127,14 @@ const VentasService = {
   async getTicketPromedio(filtros = {}) {
     const ventas = await this.getVentasFiltradas(filtros);
     if (!ventas.length) return 0;
-    const total = ventas.reduce((sum, v) => sum + v.monto, 0);
+    const total = ventas.reduce((sum, v) => sum + (v.montoTotal || v.monto), 0);
     return Math.round(total / ventas.length);
   },
 
   async getItemsPromedio(filtros = {}) {
     const ventas = await this.getVentasFiltradas(filtros);
     if (!ventas.length) return 0;
-    const totalItems = ventas.reduce((sum, v) => sum + (v.items?.length || 0), 0);
+    const totalItems = ventas.reduce((sum, v) => sum + (v.items || 0), 0);
     return (totalItems / ventas.length).toFixed(1);
   },
 
@@ -137,7 +142,8 @@ const VentasService = {
     const ventas = await this.getVentasFiltradas(filtros);
     const productos = {};
     ventas.forEach(v => {
-      v.items?.forEach(item => {
+      const articulos = v.articulos || v.items || [];
+      articulos.forEach(item => {
         if (!productos[item.nombre]) {
           productos[item.nombre] = { nombre: item.nombre, cantidad: 0, monto: 0 };
         }
@@ -158,7 +164,7 @@ const VentasService = {
         clientes[v.cliente] = { nombre: v.cliente, ventas: 0, monto: 0 };
       }
       clientes[v.cliente].ventas++;
-      clientes[v.cliente].monto += v.monto;
+      clientes[v.cliente].monto += (v.montoTotal || v.monto);
     });
     return Object.values(clientes)
       .sort((a, b) => b.monto - a.monto)
@@ -170,7 +176,7 @@ const VentasService = {
     const porHora = Array(24).fill(0);
     ventas.forEach(v => {
       const hora = new Date(v.fecha).getHours();
-      porHora[hora] += v.monto;
+      porHora[hora] += (v.montoTotal || v.monto);
     });
     return porHora.map((monto, hora) => ({ hora, monto }));
   },
@@ -182,14 +188,14 @@ const VentasService = {
     ventas.forEach(v => {
       const dia = new Date(v.fecha).getDay();
       porDia[dia].cantidad++;
-      porDia[dia].monto += v.monto;
+      porDia[dia].monto += (v.montoTotal || v.monto);
     });
     return dias.map((dia, i) => ({ dia, cantidad: porDia[i].cantidad, monto: porDia[i].monto }));
   },
 
   async getIngresosPorRango(filtros = {}) {
     const ventas = await this.getVentasFiltradas(filtros);
-    return ventas.reduce((sum, v) => sum + v.monto, 0);
+    return ventas.reduce((sum, v) => sum + (v.montoTotal || v.monto), 0);
   },
 
   async getCantidadVentas(filtros = {}) {
@@ -202,8 +208,9 @@ const VentasService = {
     let csv = 'ID,Fecha,Cliente,Items,Subtotal,Descuento,Monto,Método de Pago\n';
     ventas.forEach(v => {
       const mediosStr = v.mediosPago ? v.mediosPago.map(mp => `${mp.medio}:$${mp.monto}`).join(' + ') : v.medioPago;
-      const itemsStr = v.items?.map(i => `${i.nombre}x${i.cantidad}`).join('; ') || '';
-      csv += `${v.idVenta},${v.fecha},"${v.cliente}","${itemsStr}",${v.subtotal},${v.descuento},${v.monto},"${mediosStr}"\n`;
+      const articulos = v.articulos || v.items || [];
+      const itemsStr = articulos.map(i => `${i.nombre}x${i.cantidad}`).join('; ') || '';
+      csv += `${v.idVenta},${v.fecha},"${v.cliente}","${itemsStr}",${v.subtotal},${v.descuento},${v.montoTotal || v.monto},"${mediosStr}"\n`;
     });
     return csv;
   },
@@ -223,7 +230,7 @@ const VentasService = {
     const ventas = await this.getVentasFiltradas(filtros);
     const ticketProm = await this.getTicketPromedio(filtros);
     const itemsProm = await this.getItemsPromedio(filtros);
-    const total = ventas.reduce((s, v) => s + v.monto, 0);
+    const total = ventas.reduce((s, v) => s + (v.montoTotal || v.monto), 0);
     const topProductos = await this.getTopProductos(5, filtros);
     const topClientes = await this.getTopClientes(5, filtros);
     
@@ -301,8 +308,8 @@ const VentasService = {
             <tr>
               <td style="padding: 6px; border-bottom: 1px solid #eee;">${new Date(v.fecha).toLocaleString('es-AR')}</td>
               <td style="padding: 6px; border-bottom: 1px solid #eee;">${v.cliente}</td>
-              <td style="padding: 6px; border-bottom: 1px solid #eee; text-align: right;">$${v.monto.toLocaleString('es-AR')}</td>
-              <td style="padding: 6px; border-bottom: 1px solid #eee;">${v.medioPago}</td>
+              <td style="padding: 6px; border-bottom: 1px solid #eee; text-align: right;">$${(v.montoTotal || v.monto).toLocaleString('es-AR')}</td>
+              <td style="padding: 6px; border-bottom: 1px solid #eee;">${(v.mediosPago || []).map(mp => mp.medio).join(' + ') || v.medioPago}</td>
             </tr>
           `).join('')}
           ${ventas.length > 20 ? `<tr><td colspan="4" style="padding: 8px; text-align: center; color: #666;">... y ${ventas.length - 20} ventas más</td></tr>` : ''}
@@ -323,7 +330,7 @@ const VentasService = {
     let csv = 'ID,Fecha,Cliente,Monto,Métodos de Pago\n';
     ventas.forEach(v => {
       const mediosStr = v.mediosPago ? v.mediosPago.map(mp => `${mp.medio}:$${mp.monto}`).join(' + ') : v.medioPago;
-      csv += `${v.idVenta},${v.fecha},"${v.cliente}",${v.monto},"${mediosStr}"\n`;
+      csv += `${v.idVenta},${v.fecha},"${v.cliente}",${v.montoTotal || v.monto},"${mediosStr}"\n`;
     });
     return csv;
   },

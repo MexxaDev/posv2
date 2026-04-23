@@ -408,9 +408,9 @@ const DashboardPage = {
             <tr>
               <td>${new Date(v.fecha).toLocaleString('es-AR')}</td>
               <td>${v.cliente}</td>
-              <td>${v.items?.length || 0}</td>
-              <td>$${v.monto.toLocaleString('es-AR')}</td>
-              <td>${v.medioPago}</td>
+              <td>${v.items || 0}</td>
+              <td>$${(v.montoTotal || v.monto).toLocaleString('es-AR')}</td>
+              <td>${(v.mediosPago || []).map(mp => mp.medio).join(' + ') || v.medioPago || '-'}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -546,6 +546,8 @@ const DashboardPage = {
   },
 
   async mostrarFormularioArticulo(articulo = null) {
+    const categorias = await ArticulosService.getCategorias();
+    
     const content = `
       <form id="articuloForm">
         <div class="form-row">
@@ -561,16 +563,21 @@ const DashboardPage = {
         <div class="form-row">
           <div class="input-group">
             <label>Categoría</label>
-            <input type="text" name="categoria" value="${articulo?.categoria || ''}">
+            <select name="categoria">
+              <option value="">Seleccionar...</option>
+              ${categorias.map(c => `<option value="${c}" ${articulo?.categoria === c ? 'selected' : ''}>${c}</option>`).join('')}
+            </select>
           </div>
           <div class="input-group">
             <label>Precio</label>
             <input type="number" name="precio" value="${articulo?.precio || ''}" required>
           </div>
         </div>
-        <div class="input-group">
-          <label>Stock</label>
-          <input type="number" name="stock" value="${articulo?.stock || 0}">
+        <div class="form-row-full">
+          <div class="input-group">
+            <label>Stock</label>
+            <input type="number" name="stock" value="${articulo?.stock || 0}">
+          </div>
         </div>
       </form>
     `;
@@ -774,9 +781,49 @@ const DashboardPage = {
 
   async renderVentas() {
     const content = document.getElementById('tabContent');
-    const ventas = (await VentasService.getAll()).reverse();
+    const medios = await MediosPagoService.getNombres();
 
     content.innerHTML = `
+      <div class="filters-apple">
+        <div class="filter-group-apple">
+          <label>Desde</label>
+          <input type="date" id="filtroVentasInicio" value="${this.filtros.fechaInicio || ''}">
+        </div>
+        <div class="filter-group-apple">
+          <label>Hasta</label>
+          <input type="date" id="filtroVentasFin" value="${this.filtros.fechaFin || ''}">
+        </div>
+        <div class="filter-group-apple">
+          <label>Método</label>
+          <select id="filtroVentasMedio">
+            <option value="">Todos</option>
+            ${medios.map(m => `<option value="${m}">${m}</option>`).join('')}
+          </select>
+        </div>
+        <div class="filter-group-apple">
+          <label>Cliente</label>
+          <input type="text" id="filtroVentasCliente" placeholder="Buscar cliente...">
+        </div>
+        <div class="filter-group-apple">
+          <label>Monto Mín</label>
+          <input type="number" id="filtroVentasMontoMin" placeholder="0">
+        </div>
+        <div class="filter-group-apple">
+          <label>Monto Máx</label>
+          <input type="number" id="filtroVentasMontoMax" placeholder="999999">
+        </div>
+        <div class="filter-actions-apple">
+          <button class="apple-btn apple-btn-primary" id="btnAplicarFiltrosVentas">
+            <i class="ti ti-check"></i>
+            Filtrar
+          </button>
+          <button class="apple-btn apple-btn-secondary" id="btnLimpiarFiltrosVentas">
+            <i class="ti ti-x"></i>
+            Limpiar
+          </button>
+        </div>
+      </div>
+
       <div class="apple-card">
         <div class="apple-card-header">
           <h3 class="apple-card-title">
@@ -790,27 +837,182 @@ const DashboardPage = {
         </div>
         <div class="apple-card-body">
           <table class="table-apple">
-            <thead><tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Monto</th><th>Método</th></tr></thead>
+            <thead><tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Monto</th><th>Método</th><th>Acciones</th></tr></thead>
             <tbody id="ventasTable"></tbody>
           </table>
         </div>
       </div>
     `;
 
+    await this.cargarVentas();
+    this.setupVentasEvents();
+  },
+
+  async cargarVentas() {
+    const filtros = {
+      fechaInicio: document.getElementById('filtroVentasInicio')?.value,
+      fechaFin: document.getElementById('filtroVentasFin')?.value,
+      medioPago: document.getElementById('filtroVentasMedio')?.value,
+      cliente: document.getElementById('filtroVentasCliente')?.value,
+      montoMin: document.getElementById('filtroVentasMontoMin')?.value,
+      montoMax: document.getElementById('filtroVentasMontoMax')?.value
+    };
+
+    const ventas = await VentasService.getVentasFiltradas(filtros);
+    const ventasOrdenadas = ventas.reverse();
+
     const tbody = document.getElementById('ventasTable');
-    tbody.innerHTML = ventas.length === 0
-      ? '<tr><td colspan="5" class="empty-state">No hay ventas</td></tr>'
-      : ventas.map(v => `
+    tbody.innerHTML = ventasOrdenadas.length === 0
+      ? '<tr><td colspan="6" class="empty-state">No hay ventas</td></tr>'
+      : ventasOrdenadas.map(v => `
         <tr>
-          <td>${v.idVenta.substring(0, 8)}...</td>
+          <td>${v.idVenta?.substring(0, 8) || '-'}...</td>
           <td>${new Date(v.fecha).toLocaleString('es-AR')}</td>
           <td>${v.cliente}</td>
-          <td>$${v.monto.toLocaleString('es-AR')}</td>
-          <td>${v.medioPago}</td>
+          <td>$${(v.montoTotal || v.monto).toLocaleString('es-AR')}</td>
+          <td>${(v.mediosPago || []).map(mp => mp.medio).join(' + ') || v.medioPago || '-'}</td>
+          <td>
+            <button class="apple-btn apple-btn-secondary" data-action="view" data-id="${v.idVenta}" title="Ver">
+              <i class="ti ti-eye"></i>
+            </button>
+            <button class="apple-btn apple-btn-secondary" data-action="print" data-id="${v.idVenta}" title="Imprimir">
+              <i class="ti ti-printer"></i>
+            </button>
+          </td>
         </tr>
       `).join('');
+  },
 
-    document.getElementById('btnExportarVentas')?.addEventListener('click', () => VentasService.descargarCSV());
+  setupVentasEvents() {
+    document.getElementById('btnAplicarFiltrosVentas')?.addEventListener('click', () => {
+      this.cargarVentas();
+    });
+
+    document.getElementById('btnLimpiarFiltrosVentas')?.addEventListener('click', () => {
+      document.getElementById('filtroVentasInicio').value = '';
+      document.getElementById('filtroVentasFin').value = '';
+      document.getElementById('filtroVentasMedio').value = '';
+      document.getElementById('filtroVentasCliente').value = '';
+      document.getElementById('filtroVentasMontoMin').value = '';
+      document.getElementById('filtroVentasMontoMax').value = '';
+      this.cargarVentas();
+    });
+
+    document.getElementById('btnExportarVentas')?.addEventListener('click', () => {
+      const filtros = {
+        fechaInicio: document.getElementById('filtroVentasInicio')?.value,
+        fechaFin: document.getElementById('filtroVentasFin')?.value,
+        medioPago: document.getElementById('filtroVentasMedio')?.value,
+        cliente: document.getElementById('filtroVentasCliente')?.value,
+        montoMin: document.getElementById('filtroVentasMontoMin')?.value,
+        montoMax: document.getElementById('filtroVentasMontoMax')?.value
+      };
+      VentasService.descargarCSV(filtros);
+    });
+
+    document.getElementById('ventasTable')?.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+
+      const action = btn.dataset.action;
+      const id = btn.dataset.id;
+
+      if (action === 'view') {
+        const venta = await VentasService.getById(id);
+        if (venta) {
+          this.mostrarDetalleVenta(venta);
+        }
+      } else if (action === 'print') {
+        const venta = await VentasService.getById(id);
+        if (venta) {
+          this.imprimirVenta(venta);
+        }
+      }
+    });
+  },
+
+  async mostrarDetalleVenta(venta) {
+    const datos = await DatosNegocioService.get();
+    const mediosStr = (venta.mediosPago || []).map(mp => mp.medio + ': $' + mp.monto.toLocaleString('es-AR')).join(' + ') || venta.medioPago || '-';
+    const descuentoHtml = venta.descuento > 0 
+      ? '<div class="ticket-summary-row" style="color: var(--error);"><span>Descuento:</span><span>-$' + venta.descuento.toLocaleString('es-AR') + '</span></div>' 
+      : '';
+    const articulosHtml = (venta.articulos || []).map(item => 
+      '<div class="ticket-item">' +
+        '<span class="ticket-item-name">' + item.nombre + '</span>' +
+        '<span class="ticket-item-qty">x' + item.cantidad + '</span>' +
+        '<span class="ticket-item-price">$' + (item.precio * item.cantidad).toLocaleString('es-AR') + '</span>' +
+      '</div>'
+    ).join('') || '';
+    
+    const content = '<div class="ticket-modal" style="max-width: 360px; margin: 0 auto;">' +
+      '<div class="ticket-header"><h3>' + datos.nombre + '</h3></div>' +
+      '<div style="font-size: 12px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed #ccc;">' +
+        '<p><strong>Fecha:</strong> ' + new Date(venta.fecha).toLocaleString('es-AR') + '</p>' +
+        '<p><strong>ID:</strong> ' + venta.idVenta + '</p>' +
+        '<p><strong>Cliente:</strong> ' + venta.cliente + '</p>' +
+        (venta.nota ? '<p><strong>Nota:</strong> ' + venta.nota + '</p>' : '') +
+      '</div>' +
+      '<div class="ticket-items">' + articulosHtml + '</div>' +
+      '<div class="ticket-summary">' +
+        '<div class="ticket-summary-row"><span>Subtotal:</span><span>$' + (venta.subtotal || 0).toLocaleString('es-AR') + '</span></div>' +
+        descuentoHtml +
+        '<div class="ticket-summary-row total"><span>TOTAL:</span><span>$' + (venta.montoTotal || venta.monto).toLocaleString('es-AR') + '</span></div>' +
+      '</div>' +
+      '<div class="ticket-footer"><p><strong>Pago:</strong> ' + mediosStr + '</p></div>' +
+    '</div>';
+
+    const buttons = [
+      { id: 'btnCerrarDetalle', text: 'Cerrar', type: 'primary' }
+    ];
+
+    const modal = Modal.show({
+      title: 'Detalle de Venta',
+      content,
+      buttons
+    });
+
+    document.getElementById('btnCerrarDetalle')?.addEventListener('click', () => {
+      Modal.close(modal);
+    });
+  },
+
+  async imprimirVenta(venta) {
+    const datos = await DatosNegocioService.get();
+    const mediosStr = (venta.mediosPago || []).map(mp => mp.medio + ': $' + mp.monto.toLocaleString('es-AR')).join(' + ') || venta.medioPago || '-';
+    const descuentoHtml = venta.descuento > 0 ? '<p style="font-size: 11px; text-align: right; color: red;"><strong>Descuento:</strong> -$' + venta.descuento.toLocaleString('es-AR') + '</p>' : '';
+    const articulosHtml = (venta.articulos || []).map(item => 
+      '<tr><td style="text-align: left;">' + item.nombre + ' x' + item.cantidad + '</td><td style="text-align: right;">$' + (item.precio * item.cantidad).toLocaleString('es-AR') + '</td></tr>'
+    ).join('') || '';
+    
+    const ticketHTML = '<div style="font-family: \'Courier New\', monospace; padding: 20px; max-width: 280px; margin: 0 auto; text-align: center;">' +
+      '<h3 style="margin: 0 0 10px 0;">' + datos.nombre + '</h3>' +
+      '<p style="font-size: 11px; margin: 0 0 10px 0;">' + (datos.direccion || '') + ' ' + (datos.telefono || '') + '</p>' +
+      '<hr style="border: none; border-top: 1px dashed #000; margin: 10px 0;">' +
+      '<p style="font-size: 11px; text-align: left;"><strong>Fecha:</strong> ' + new Date(venta.fecha).toLocaleString('es-AR') + '</p>' +
+      '<p style="font-size: 11px; text-align: left;"><strong>Cliente:</strong> ' + venta.cliente + '</p>' +
+      '<hr style="border: none; border-top: 1px dashed #000; margin: 10px 0;">' +
+      '<table style="width: 100%; font-size: 11px; margin-bottom: 10px;">' + articulosHtml + '</table>' +
+      '<hr style="border: none; border-top: 1px dashed #000; margin: 10px 0;">' +
+      '<p style="font-size: 11px; text-align: right;"><strong>Subtotal:</strong> $' + (venta.subtotal || 0).toLocaleString('es-AR') + '</p>' +
+      descuentoHtml +
+      '<p style="font-size: 14px; text-align: right;"><strong>TOTAL:</strong> $' + (venta.montoTotal || venta.monto).toLocaleString('es-AR') + '</p>' +
+      '<hr style="border: none; border-top: 1px dashed #000; margin: 10px 0;">' +
+      '<p style="font-size: 11px;"><strong>Pago:</strong> ' + mediosStr + '</p>' +
+      '<p style="font-size: 11px; margin-top: 20px;">¡Gracias por su compra!</p>' +
+    '</div>';
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Ticket - ${venta.idVenta}</title>
+        </head>
+        <body>${ticketHTML}</body>
+      </html>
+    `);
+    printWindow.document.close();
+    setTimeout(() => printWindow.print(), 250);
   },
 
   async renderNegocio() {
@@ -854,6 +1056,30 @@ const DashboardPage = {
           </form>
         </div>
       </div>
+
+      <div class="apple-card">
+        <div class="apple-card-header">
+          <h3 class="apple-card-title">
+            <i class="ti ti-download"></i>
+            Copia de Seguridad
+          </h3>
+        </div>
+        <div class="apple-card-body">
+          <p style="margin-bottom: 16px; color: var(--apple-text-secondary);">
+            Exporta todos tus datos (artículos, clientes, ventas, categorías) o importa una copia de seguridad anterior.
+          </p>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <button class="apple-btn apple-btn-primary" id="btnExportBackup">
+              <i class="ti ti-download"></i>
+              Exportar Backup
+            </button>
+            <button class="apple-btn apple-btn-secondary" id="btnImportBackup">
+              <i class="ti ti-upload"></i>
+              Importar Backup
+            </button>
+          </div>
+        </div>
+      </div>
     `;
 
     document.getElementById('negocioForm')?.addEventListener('submit', async (e) => {
@@ -861,6 +1087,23 @@ const DashboardPage = {
       const data = Object.fromEntries(new FormData(e.target));
       await DatosNegocioService.update(data);
       Modal.alert('Datos actualizados', 'success');
+    });
+
+    document.getElementById('btnExportBackup')?.addEventListener('click', async () => {
+      if (confirm('¿Exportar todos los datos? Se descargará un archivo JSON.')) {
+        const success = await BackupService.exportData();
+        if (success) {
+          Modal.alert('Backup exportado correctamente', 'success');
+        } else {
+          Modal.alert('Error al exportar backup', 'error');
+        }
+      }
+    });
+
+    document.getElementById('btnImportBackup')?.addEventListener('click', () => {
+      if (confirm('⚠️ Los datos actuales se reemplazarán con los del archivo. ¿Continuar?')) {
+        BackupService.showImportDialog();
+      }
     });
   },
 

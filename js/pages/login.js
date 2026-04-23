@@ -5,9 +5,9 @@ const LoginPage = {
       <div class="login-page">
         <div class="login-card">
           <div class="login-logo">
-            <span>GG</span>
+            <span>TW</span>
           </div>
-          <h1>GG BEACH HOUSE</h1>
+          <h1>The West</h1>
           <p class="login-subtitle">Iniciar Sesión</p>
 
           <form id="loginForm" class="login-form">
@@ -64,7 +64,11 @@ const LoginPage = {
     });
   },
 
-  async mostrarModalAperturaCaja() {
+  async mostrarModalAperturaCaja(modalActual = null) {
+    if (modalActual) {
+      Modal.close(modalActual);
+    }
+
     const content = `
       <div class="apertura-caja-modal">
         <div class="apertura-icon">💰</div>
@@ -72,9 +76,9 @@ const LoginPage = {
         <p class="text-muted">Ingresa el saldo inicial de la caja para comenzar el día</p>
 
         <form id="aperturaCajaForm">
-          <div class="input-group">
+          <div class="input-group" style="text-align: left;">
             <label>Saldo Inicial ($)</label>
-            <input type="number" id="saldoInicial" placeholder="0" required min="0">
+            <input type="number" id="saldoInicial" placeholder="0" required min="0" style="font-size: 18px; padding: 14px;">
           </div>
         </form>
       </div>
@@ -93,6 +97,8 @@ const LoginPage = {
     document.getElementById('btnAbrirCaja')?.addEventListener('click', async () => {
       const saldoInicial = document.getElementById('saldoInicial').value;
       await CajaService.abrir(saldoInicial || 0);
+
+      Modal.close(modal);
 
       const user = AuthService.getUser();
       window.location.hash = user?.role === 'admin' ? 'dashboard' : 'pos';

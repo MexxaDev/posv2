@@ -1,5 +1,6 @@
 const CajaService = {
   filename: 'caja.json',
+  STORAGE_KEY: 'caja_abierta_hoy',
 
   async getEstado() {
     return await DataStore.read(this.filename) || this.getDefault();
@@ -7,6 +8,7 @@ const CajaService = {
 
   getDefault() {
     return {
+      id: 'caja_principal',
       abierta: false,
       fechaApertura: null,
       saldoInicial: 0,
@@ -28,7 +30,12 @@ const CajaService = {
     const hoy = new Date().toISOString().split('T')[0];
     const fechaApertura = estado.fechaApertura?.split('T')[0];
 
-    return fechaApertura === hoy;
+    const abiertaHoy = localStorage.getItem(this.STORAGE_KEY);
+    if (fechaApertura !== hoy || !abiertaHoy) {
+      return false;
+    }
+
+    return true;
   },
 
   async abrir(saldoInicial) {
@@ -38,6 +45,10 @@ const CajaService = {
     estado.saldoInicial = parseFloat(saldoInicial) || 0;
 
     await DataStore.write(this.filename, estado);
+    
+    const hoy = new Date().toISOString().split('T')[0];
+    localStorage.setItem(this.STORAGE_KEY, hoy);
+    
     return estado;
   },
 
@@ -47,19 +58,27 @@ const CajaService = {
 
     estado.ventas.push(venta);
 
-    switch (venta.medioPago) {
-      case 'Efectivo':
-        estado.ventasEfectivo += venta.monto;
-        break;
-      case 'Transferencia':
-        estado.ventasTransferencia += venta.monto;
-        break;
-      case 'Débito':
-        estado.ventasDebito += venta.monto;
-        break;
-      case 'Crédito':
-        estado.ventasCredito += venta.monto;
-        break;
+    const mediosArray = Array.isArray(venta.mediosPago) ? venta.mediosPago : 
+                      (venta.medioPago ? [{ medio: venta.medioPago, monto: venta.monto }] : []);
+    
+    for (const mp of mediosArray) {
+      const monto = parseFloat(mp.monto) || 0;
+      switch (mp.medio) {
+        case 'Efectivo':
+          estado.ventasEfectivo += monto;
+          break;
+        case 'Transferencia':
+          estado.ventasTransferencia += monto;
+          break;
+        case 'Débito':
+        case 'Debito':
+          estado.ventasDebito += monto;
+          break;
+        case 'Crédito':
+        case 'Credito':
+          estado.ventasCredito += monto;
+          break;
+      }
     }
 
     estado.total = estado.ventasEfectivo + estado.ventasTransferencia + estado.ventasDebito + estado.ventasCredito;
@@ -77,6 +96,9 @@ const CajaService = {
     estado.saldoReal = parseFloat(saldoReal) || 0;
 
     await DataStore.write(this.filename, estado);
+    
+    localStorage.removeItem(this.STORAGE_KEY);
+    
     return estado;
   },
 

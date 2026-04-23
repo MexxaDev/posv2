@@ -1,19 +1,27 @@
-
 {
   "name": "Levitar POS",
   "short_name": "Levitar",
+  "description": "Sistema de Punto de Venta - GG Beach House",
   "start_url": ".",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#F6F8FA",
-  "theme_color": "#CFE9F6",
+  "theme_color": "#6366F1",
+  "categories": ["business", "shopping"],
   "icons": [
     {
+      "src": "assets/images/logo.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
+      "src": "assets/images/logo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
 }

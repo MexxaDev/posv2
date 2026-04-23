@@ -35,6 +35,8 @@ const Modal = {
 
   close(modal) {
     modal.classList.remove('show');
+    modal.style.opacity = '0';
+    modal.style.transform = 'scale(0.95)';
     setTimeout(() => modal.remove(), 200);
   },
 
@@ -54,7 +56,7 @@ const Modal = {
 
   confirm(message) {
     return new Promise((resolve) => {
-      const content = `<p class="confirm-message">${message}</p>`;
+      const content = `<p class="confirm-message" style="text-align: center; padding: 10px 0;">${message}</p>`;
       const buttons = [
         { id: 'confirm-yes', text: 'Sí, confirmar', type: 'primary' },
         { id: 'confirm-no', text: 'Cancelar', type: 'secondary' }

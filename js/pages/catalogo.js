@@ -1,10 +1,12 @@
 const CatalogoPage = {
   articulos: [],
+  categoriasCreadas: [],
   categoriaActual: 'todos',
 
   async init() {
     if (!Router.requireAuth(null, 'admin')) return;
     this.articulos = await ArticulosService.getAll();
+    this.categoriasCreadas = await CategoriasService.getAll();
     this.render();
     this.setupEvents();
   },
@@ -46,13 +48,22 @@ const CatalogoPage = {
   renderCategorias() {
     const container = document.getElementById('filtroCategorias');
     const categorias = [...new Set(this.articulos.map(a => a.categoria))];
-
-    container.innerHTML = `
-      <button class="filtro-btn ${this.categoriaActual === 'todos' ? 'active' : ''}" data-cat="todos">Todos</button>
-      ${categorias.map(cat => `
-        <button class="filtro-btn ${this.categoriaActual === cat ? 'active' : ''}" data-cat="${cat}">${cat}</button>
-      `).join('')}
-    `;
+    
+    if (this.categoriasCreadas && this.categoriasCreadas.length > 0) {
+      container.innerHTML = `
+        <button class="filtro-btn ${this.categoriaActual === 'todos' ? 'active' : ''}" data-cat="todos">Todos</button>
+        ${this.categoriasCreadas.map(cat => `
+          <button class="filtro-btn ${this.categoriaActual === cat.nombre ? 'active' : ''}" data-cat="${cat.nombre}">${cat.nombre}</button>
+        `).join('')}
+      `;
+    } else {
+      container.innerHTML = `
+        <button class="filtro-btn ${this.categoriaActual === 'todos' ? 'active' : ''}" data-cat="todos">Todos</button>
+        ${categorias.map(cat => `
+          <button class="filtro-btn ${this.categoriaActual === cat ? 'active' : ''}" data-cat="${cat}">${cat}</button>
+        `).join('')}
+      `;
+    }
   },
 
   renderProductos() {
@@ -143,8 +154,20 @@ const CatalogoPage = {
 
   async mostrarFormulario(articulo = null) {
     const catsDB = await CategoriasService.getAll();
-    const catsArticulos = [...new Set(this.articulos.map(a => a.categoria))];
-    const todasCategorias = [...new Set([...catsDB.map(c => c.nombre), ...catsArticulos])];
+    const catsArticulos = [...new Set(this.articulos.map(a => a.categoria).filter(c => c && c.trim())];
+    const catsNombres = new Set((catsDB || []).map(c => c.nombre).filter(n => n && n.trim()));
+    catsArticulos.forEach(c => catsNombres.add(c));
+    const todasCategorias = Array.from(catsNombres).sort();
+
+    let opcionesCategorias = '<option value="">Seleccionar categoría</option>';
+    todasCategorias.forEach(function(c) {
+      const selected = (articulo && articulo.categoria === c) ? 'selected' : '';
+      opcionesCategorias += '<option value="' + c + '" ' + selected + '>' + c + '</option>';
+    });
+    
+    if (articulo && !todasCategorias.includes(articulo.categoria)) {
+      opcionesCategorias += `<option value="${articulo.categoria}" selected>${articulo.categoria}</option>`;
+    }
 
     const content = `
       <form id="articuloForm">
@@ -162,8 +185,7 @@ const CatalogoPage = {
           <div class="input-group">
             <label>Categoría</label>
             <select name="categoria" required>
-              <option value="">Seleccionar categoría</option>
-              ${todasCategorias.map(c => `<option value="${c}" ${articulo?.categoria === c ? 'selected' : ''}>${c}</option>`).join('')}
+              ${opcionesCategorias}
             </select>
           </div>
           <div class="input-group">
