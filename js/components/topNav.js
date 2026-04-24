@@ -19,14 +19,14 @@ const TopNav = {
         </div>
         
         <div class="top-nav-user">
-          <div class="caja-indicador" id="cajaIndicador" title="Estado de caja">
-            <span class="caja-dot" id="cajaDot"></span>
-            <span class="caja-text" id="cajaText">Cargando...</span>
-          </div>
           <button class="top-nav-user-btn" id="userMenuBtn">
             <i class="ti ti-user"></i>
             <i class="ti ti-chevron-down"></i>
           </button>
+          <div class="caja-indicador" id="cajaIndicador" title="Estado de caja">
+            <span class="caja-dot" id="cajaDot"></span>
+            <span class="caja-text" id="cajaText">Cargando...</span>
+          </div>
           <div class="user-dropdown" id="userDropdown">
             <button class="user-dropdown-item danger" id="btnLogout">
               <i class="ti ti-logout"></i>
@@ -64,6 +64,10 @@ const TopNav = {
       const text = document.getElementById('cajaText');
       if (text) text.textContent = 'Sin datos';
     }
+  },
+  
+  async refresh() {
+    await this.updateCajaIndicador();
   },
   
   initEvents() {

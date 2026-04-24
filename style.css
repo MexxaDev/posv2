@@ -165,6 +165,9 @@ img {
 /* User Menu */
 .top-nav-user {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .top-nav-user-btn {
@@ -487,6 +490,51 @@ img {
   background: #E8E8E8;
 }
 
+/* Código de Barras Input */
+.codigo-barras-input-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.codigo-barras-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: var(--apple-border);
+  border-radius: var(--apple-radius);
+  background: var(--apple-gray);
+  color: var(--apple-text);
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.codigo-barras-input:focus {
+  outline: none;
+  border-color: var(--apple-primary);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.codigo-barras-input::placeholder {
+  color: var(--apple-text-secondary);
+}
+
+.codigo-barras-btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: var(--apple-radius);
+  background: var(--apple-primary);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.codigo-barras-btn:hover {
+  background: #4f46e5;
+}
+
 /* Order Items */
 .order-panel-items {
   flex: 1;
@@ -683,7 +731,7 @@ img {
 }
 
 .medio-pago-select {
-  width: 85px;
+  width: 50%;
   padding: 6px 8px;
   border: var(--apple-border);
   border-radius: var(--apple-radius);

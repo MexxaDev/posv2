@@ -170,6 +170,9 @@ const Header = {
     document.getElementById('btnCerrar')?.addEventListener('click', async () => {
       const saldoReal = document.getElementById('saldoReal')?.value || 0;
       await CajaService.cerrar(saldoReal);
+      if (typeof window.TopNav !== 'undefined') {
+        await window.TopNav.updateCajaIndicador();
+      }
       Modal.close(modal);
       Modal.alert('Caja cerrada correctamente', 'success');
     });

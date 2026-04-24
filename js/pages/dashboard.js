@@ -1236,6 +1236,9 @@ const DashboardPage = {
       const { value: saldo } = await this.promptMonto('Abrir Caja', 'Ingrese el saldo inicial:');
       if (saldo && !isNaN(saldo)) {
         await CajaService.abrir(saldo);
+        if (typeof window.TopNav !== 'undefined') {
+          await window.TopNav.updateCajaIndicador();
+        }
         this.renderCaja();
       }
     });
@@ -1243,6 +1246,9 @@ const DashboardPage = {
     document.getElementById('btnForzarCierre')?.addEventListener('click', async () => {
       if (confirm('¿Forzar el cierre de caja? Esto cerrará la caja sin mostrar el detalle.')) {
         await CajaService.cerrar(0);
+        if (typeof TopNav !== 'undefined') {
+          await TopNav.updateCajaIndicador();
+        }
         this.renderCaja();
       }
     });

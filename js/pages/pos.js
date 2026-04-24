@@ -109,6 +109,12 @@ async init() {
               <i class="ti ti-user"></i>
               <span id="clienteNombre">${this.clienteActual?.nombreCliente || 'Sin cliente'}</span>
             </button>
+            <div class="codigo-barras-input-group">
+              <input type="text" id="codigoBarrasInput" placeholder="Escanear código..." class="codigo-barras-input">
+              <button class="codigo-barras-btn" id="btnAgregarCodigo">
+                <i class="ti ti-plus"></i>
+              </button>
+            </div>
           </div>
 
           <div class="order-panel-items" id="ordenItems"></div>
@@ -372,6 +378,26 @@ async init() {
       this.mostrarSelectorCliente();
     });
 
+    document.getElementById('codigoBarrasInput')?.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const codigo = e.target.value.trim();
+        if (codigo) {
+          await this.agregarProductoPorCodigo(codigo);
+          e.target.value = '';
+        }
+      }
+    });
+
+    document.getElementById('btnAgregarCodigo')?.addEventListener('click', async () => {
+      const input = document.getElementById('codigoBarrasInput');
+      const codigo = input?.value.trim();
+      if (codigo) {
+        await this.agregarProductoPorCodigo(codigo);
+        if (input) input.value = '';
+      }
+    });
+
     document.getElementById('btnToggleNota')?.addEventListener('click', () => {
       this.notaVisible = !this.notaVisible;
       document.getElementById('notaPanel').style.display = this.notaVisible ? 'block' : 'none';
@@ -481,8 +507,12 @@ async init() {
   },
 
   async agregarProducto(codigo) {
+    this.articulos = await ArticulosService.getAll();
     const articulo = this.articulos.find(a => a.codigo === codigo);
-    if (!articulo) return;
+    if (!articulo) {
+      Modal.alert('No tienes un artículo con este código', 'error');
+      return;
+    }
 
     if (articulo.stock <= 0) {
       Modal.alert('Producto sin stock', 'error');
@@ -508,6 +538,10 @@ async init() {
 
     this.renderOrden();
     Modal.alert(`Agregado: ${articulo.nombre}`, 'success');
+  },
+
+  async agregarProductoPorCodigo(codigo) {
+    await this.agregarProducto(codigo);
   },
 
   mostrarSelectorCliente() {
@@ -665,6 +699,9 @@ async init() {
 
     await VentasService.create(venta);
     await CajaService.agregarVenta(venta);
+    if (typeof window.TopNav !== 'undefined') {
+      await window.TopNav.updateCajaIndicador();
+    }
 
     if (this.clienteActual && this.clienteActual.nombreCliente !== 'Consumidor Final') {
       await ClientesService.registrarCompra(this.clienteActual.id, montoTotal);
@@ -707,23 +744,42 @@ async init() {
       });
     });
 
-    document.getElementById('btnImprimirTicket')?.addEventListener('click', () => {
+    document.getElementById('btnImprimirTicket')?.addEventListener('click', async () => {
       const ticketContent = document.getElementById('ticketContent');
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Ticket - ${venta.idVenta}</title>
-            <style>
-              body { font-family: 'Courier New', monospace; padding: 20px; max-width: 300px; margin: 0 auto; }
-              .ticket print { padding: 10px; }
-            </style>
-          </head>
-          <body>${ticketContent?.innerHTML || ''}</body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
+      
+      const printArea = document.createElement('div');
+      printArea.innerHTML = `
+        <div style="font-family: 'Courier New', monospace; padding: 20px; max-width: 300px; margin: 0 auto;">
+          ${ticketContent?.innerHTML || ''}
+        </div>
+      `;
+      printArea.style.position = 'absolute';
+      printArea.style.left = '-9999px';
+      printArea.id = 'tempPrintArea';
+      document.body.appendChild(printArea);
+      
+      window.print();
+      
+      setTimeout(() => {
+        const tempArea = document.getElementById('tempPrintArea');
+        if (tempArea) tempArea.remove();
+      }, 100);
+      
+      Modal.close(modal);
+      
+      this.carrito = [];
+      this.notaVisible = false;
+      this.descuentoVisible = false;
+      this.descuento = { tipo: 'monto', valor: 0 };
+      this.nota = '';
+      this.mediosPagoSeleccionados = [{ medio: this.mediosPago[0] || 'Efectivo', monto: 0 }];
+      
+      ClientesService.getAll().then(clientes => {
+        const cf = clientes.find(c => c.nombreCliente === 'Consumidor Final');
+        this.clienteActual = cf || null;
+        this.render();
+        this.setupEvents();
+      });
     });
   },
 
@@ -886,6 +942,10 @@ async init() {
           movimientoConcepto: concepto
         };
         await VentasService.create(movimientoVenta);
+        
+        if (typeof window.TopNav !== 'undefined') {
+          await window.TopNav.updateCajaIndicador();
+        }
 
         Modal.close(modal);
 
@@ -996,6 +1056,9 @@ const buttons = [
     document.getElementById('btnConfirmarCierre')?.addEventListener('click', async () => {
       const montoReal = parseFloat(document.getElementById('montoRealCierre').value) || 0;
       await CajaService.cerrar(montoReal);
+      if (typeof window.TopNav !== 'undefined') {
+        await window.TopNav.updateCajaIndicador();
+      }
       Modal.close(modal);
       Modal.alert('Caja cerrada correctamente', 'success');
     });
