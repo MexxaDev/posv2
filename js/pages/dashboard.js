@@ -509,10 +509,20 @@ const DashboardPage = {
             <i class="ti ti-box"></i>
             Gestión de Artículos
           </h3>
-          <button class="apple-btn apple-btn-primary" id="btnNuevoArticulo">
-            <i class="ti ti-plus"></i>
-            Nuevo
-          </button>
+          <div class="apple-card-actions">
+            <button class="apple-btn apple-btn-secondary" id="btnImportArticulos">
+              <i class="ti ti-upload"></i>
+              Importar
+            </button>
+            <button class="apple-btn apple-btn-secondary" id="btnExportArticulos">
+              <i class="ti ti-download"></i>
+              Exportar
+            </button>
+            <button class="apple-btn apple-btn-primary" id="btnNuevoArticulo">
+              <i class="ti ti-plus"></i>
+              Nuevo
+            </button>
+          </div>
         </div>
         <div class="apple-card-body">
           <table class="table-apple">
@@ -552,6 +562,61 @@ const DashboardPage = {
 
   setupArticulosEvents() {
     document.getElementById('btnNuevoArticulo')?.addEventListener('click', () => this.mostrarFormularioArticulo());
+
+    document.getElementById('btnImportArticulos')?.addEventListener('click', async () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+          try {
+            const data = JSON.parse(event.target.result);
+            if (!data.articulos || !Array.isArray(data.articulos)) {
+              Modal.alert('Archivo inválido. Debe contener un array "articulos"', 'error');
+              return;
+            }
+
+            if (typeof Database !== 'undefined') {
+              await Database.clear('articulos');
+              for (const item of data.articulos) {
+                await Database.put('articulos', item);
+              }
+            }
+            localStorage.setItem('pos_data_articulos.json', JSON.stringify(data.articulos));
+
+            Modal.alert('Artículos importados correctamente', 'success');
+            this.renderArticulos();
+          } catch (err) {
+            Modal.alert('Error al importar: ' + err.message, 'error');
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    });
+
+    document.getElementById('btnExportArticulos')?.addEventListener('click', async () => {
+      const articulos = await ArticulosService.getAll();
+      const data = {
+        version: 1,
+        fechaexport: new Date().toISOString(),
+        articulos: articulos
+      };
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `articulos_${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      Modal.alert('Artículos exportados correctamente', 'success');
+    });
 
     document.getElementById('articulosTable')?.addEventListener('click', async (e) => {
       const btn = e.target.closest('button');

@@ -1211,6 +1211,11 @@ img {
   color: var(--apple-text);
 }
 
+.apple-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .apple-card-body {
   padding: 16px 20px;
 }
