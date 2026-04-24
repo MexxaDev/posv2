@@ -2,9 +2,7 @@ const VentasService = {
   filename: 'ventas.json',
 
   async getAll() {
-    const data = await DataStore.read(this.filename) || [];
-    console.log('VentasService.getAll():', data.length, 'ventas');
-    return data;
+    return await DataStore.read(this.filename) || [];
   },
 
   async create(data) {
@@ -26,9 +24,7 @@ const VentasService = {
       usuario: data.usuario || 'sistema'
     };
     ventas.push(nueva);
-    console.log('VentasService.create(): guardando', nueva.idVenta, 'en array de', ventas.length, 'ventas');
     await DataStore.write(this.filename, ventas);
-    console.log('VentasService.create(): escrito correctamente');
     return nueva;
   },
 

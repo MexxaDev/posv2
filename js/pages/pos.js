@@ -96,6 +96,9 @@ async init() {
               <i class="ti ti-shopping-cart"></i>
               Pedido Actual
             </h3>
+            <button class="btn-movimiento-caja" id="btnMovimientoCaja" title="Movimiento de Caja">
+              <i class="ti ti-cash"></i>
+            </button>
             <button class="btn-cerrar-caja-header" id="btnCerrarCajaHeader" title="Cerrar Caja">
               <i class="ti ti-logout"></i>
             </button>
@@ -354,6 +357,8 @@ async init() {
     });
 
     document.getElementById('btnCobrar')?.addEventListener('click', () => this.procesarVenta());
+
+    document.getElementById('btnMovimientoCaja')?.addEventListener('click', () => this.mostrarModalMovimientoCaja());
 
     document.getElementById('btnCerrarCaja')?.addEventListener('click', () => this.mostrarCierreCaja());
     
@@ -775,6 +780,130 @@ async init() {
     return '$' + valor.toLocaleString('es-AR');
   },
 
+  async mostrarModalMovimientoCaja() {
+    const cajaAbierta = await CajaService.estaAbierta();
+    if (!cajaAbierta) {
+      Modal.alert('La caja no está abierta. Debes abrir la caja primero.', 'error');
+      return;
+    }
+
+    const medios = await MediosPagoService.getNombres();
+    const mediosOptions = medios.map(m => `<option value="${m}">${m}</option>`).join('');
+
+    const content = `
+      <div class="movimiento-caja-modal">
+        <div class="movimiento-caja-icon">
+          <i class="ti ti-cash" style="font-size: 32px;"></i>
+        </div>
+        <h2 style="text-align: center; margin-bottom: 16px;">Movimiento de Caja</h2>
+        
+        <form id="movimientoCajaForm">
+          <div class="input-group" style="text-align: left;">
+            <label>Tipo de Movimiento</label>
+            <select id="tipoMovimiento" required style="font-size: 16px; padding: 12px; width: 100%;">
+              <option value="">Seleccionar...</option>
+              <option value="ingreso">Ingreso de dinero</option>
+              <option value="egreso">Egreso de dinero</option>
+            </select>
+          </div>
+          
+          <div class="input-group" style="text-align: left; margin-top: 16px;">
+            <label>Concepto</label>
+            <input type="text" id="conceptoMovimiento" placeholder="Ej: Reposición, Gasto, etc." required style="font-size: 14px; padding: 12px;">
+          </div>
+          
+          <div class="input-group" style="text-align: left; margin-top: 16px;">
+            <label>Monto ($)</label>
+            <input type="number" id="montoMovimiento" placeholder="0" required min="0.01" step="0.01" style="font-size: 18px; padding: 14px;">
+          </div>
+          
+          <div class="input-group" style="text-align: left; margin-top: 16px;">
+            <label>Método de Pago</label>
+            <select id="medioMovimiento" required style="font-size: 14px; padding: 12px; width: 100%;">
+              ${mediosOptions}
+            </select>
+          </div>
+        </form>
+        
+        <div id="movimientoError" class="text-error" style="margin-top: 12px; text-align: center; display: none;"></div>
+      </div>
+    `;
+
+    const buttons = [
+      { id: 'btnGuardarMovimiento', text: 'Guardar', type: 'primary' },
+      { id: 'btnCancelarMovimiento', text: 'Cancelar', type: 'secondary' }
+    ];
+
+    const modal = Modal.show({
+      title: 'Movimiento de Caja',
+      content,
+      buttons
+    });
+
+    document.getElementById('btnGuardarMovimiento')?.addEventListener('click', async () => {
+      const errorEl = document.getElementById('movimientoError');
+      const tipo = document.getElementById('tipoMovimiento')?.value;
+      const concepto = document.getElementById('conceptoMovimiento')?.value.trim();
+      const monto = parseFloat(document.getElementById('montoMovimiento')?.value);
+      const medio = document.getElementById('medioMovimiento')?.value;
+
+      if (!tipo) {
+        errorEl.textContent = 'Debes seleccionar el tipo de movimiento';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      if (!concepto) {
+        errorEl.textContent = 'Debes ingresar un concepto';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      if (!monto || monto <= 0) {
+        errorEl.textContent = 'El monto debe ser mayor a 0';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      try {
+        await CajaService.agregarMovimiento(tipo, concepto, monto, medio);
+
+        const movimientoVenta = {
+          clienteId: null,
+          cliente: 'Sistema - Movimiento de Caja',
+          articulos: [],
+          items: 0,
+          mediosPago: [{ medio: medio, monto: monto }],
+          descuento: 0,
+          subtotal: monto,
+          nota: concepto,
+          tipo: 'movimiento_caja',
+          monto: monto,
+          montoTotal: monto,
+          fecha: new Date().toISOString(),
+          usuario: AuthService?.getUser()?.email || 'sistema',
+          movimientoTipo: tipo,
+          movimientoConcepto: concepto
+        };
+        await VentasService.create(movimientoVenta);
+
+        Modal.close(modal);
+
+        const tipoLabel = tipo === 'ingreso' ? 'Ingreso' : 'Egreso';
+        Modal.alert(`${tipoLabel} registrado: $${monto.toLocaleString('es-AR')} - ${concepto}`, 'success');
+      } catch (e) {
+        errorEl.textContent = 'Error al registrar el movimiento: ' + e.message;
+        errorEl.style.display = 'block';
+      }
+    });
+
+    document.getElementById('btnCancelarMovimiento')?.addEventListener('click', () => {
+      Modal.close(modal);
+    });
+
+    setTimeout(() => document.getElementById('tipoMovimiento')?.focus(), 100);
+  },
+
   async mostrarCierreCaja() {
     const cajaAbierta = await CajaService.estaAbierta();
     if (!cajaAbierta) {
@@ -789,6 +918,19 @@ async init() {
           <span>Saldo Inicial</span>
           <span>${this.formatPrecio(resumen.saldoInicial)}</span>
         </div>
+        ${resumen.movimientosIngresos > 0 || resumen.movimientosEgresos > 0 ? `
+        <div class="cierre-resumen-section">
+          <div class="cierre-section-title">Movimientos de Caja</div>
+          <div class="cierre-resumen-row">
+            <span>Ingresos</span>
+            <span class="text-success">+${this.formatPrecio(resumen.movimientosIngresos)}</span>
+          </div>
+          <div class="cierre-resumen-row">
+            <span>Egresos</span>
+            <span class="text-error">-${this.formatPrecio(resumen.movimientosEgresos)}</span>
+          </div>
+        </div>
+        ` : ''}
         <div class="cierre-resumen-section">
           <div class="cierre-section-title">Ventas por Método</div>
           <div class="cierre-resumen-row">
@@ -885,6 +1027,11 @@ const buttons = [
 
     const mensaje = '*CIERRE DE CAJA - ' + datos.nombre.toUpperCase() + '*' + '\n' +
       'Fecha: ' + hoy + '\n\n' +
+      '_Apertura_:' + '\n' +
+      '• Saldo Inicial: ' + this.formatPrecio(resumen.saldoInicial) + '\n\n' +
+      '_Movimientos de Caja_:' + '\n' +
+      '• Ingresos: ' + this.formatPrecio(resumen.movimientosIngresos) + '\n' +
+      '• Egresos: ' + this.formatPrecio(resumen.movimientosEgresos) + '\n\n' +
       '_Ventas por Método_:' + '\n' +
       '• Efectivo: ' + this.formatPrecio(resumen.ventasEfectivo) + '\n' +
       '• Transferencia: ' + this.formatPrecio(resumen.ventasTransferencia) + '\n' +
@@ -892,7 +1039,6 @@ const buttons = [
       '• Crédito: ' + this.formatPrecio(resumen.ventasCredito) + '\n\n' +
       '_Totales_:' + '\n' +
       '• Total Ventas: ' + this.formatPrecio(resumen.totalVentas) + '\n' +
-      '• Saldo Inicial: ' + this.formatPrecio(resumen.saldoInicial) + '\n' +
       '• Saldo Teórico: ' + this.formatPrecio(resumen.saldoTeorico) + '\n' +
       '• Cant. Ventas: ' + resumen.cantidadVentas;
 

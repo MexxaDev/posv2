@@ -1,7 +1,11 @@
 {
+  "id": "caja_principal",
   "abierta": false,
   "fechaApertura": null,
   "saldoInicial": 0,
+  "movimientos": [],
+  "movimientosIngresos": 0,
+  "movimientosEgresos": 0,
   "ventas": [],
   "ventasEfectivo": 0,
   "ventasTransferencia": 0,

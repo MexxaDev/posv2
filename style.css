@@ -434,6 +434,26 @@ img {
   color: white;
 }
 
+.btn-movimiento-caja {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: var(--apple-gray);
+  color: var(--apple-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  margin-right: 6px;
+}
+
+.btn-movimiento-caja:hover {
+  background: var(--apple-accent);
+  color: white;
+}
+
 .order-panel-count {
   font-size: 12px;
   color: var(--apple-text-secondary);
@@ -1629,6 +1649,58 @@ img {
   margin-bottom: 20px;
 }
 
+/* Movimiento Caja Modal Specific */
+.movimiento-caja-modal {
+  text-align: center;
+  padding: 10px 0;
+}
+
+.movimiento-caja-modal .movimiento-caja-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--apple-gray);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  color: var(--apple-accent);
+}
+
+.movimiento-caja-modal .input-group {
+  text-align: left;
+  margin-bottom: 12px;
+}
+
+.movimiento-caja-modal .input-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--apple-text-secondary);
+  margin-bottom: 6px;
+}
+
+.movimiento-caja-modal select,
+.movimiento-caja-modal input {
+  width: 100%;
+  border: var(--apple-border);
+  border-radius: var(--apple-radius);
+  background: var(--apple-gray);
+  font-size: 14px;
+  padding: 10px 12px;
+}
+
+.movimiento-caja-modal select:focus,
+.movimiento-caja-modal input:focus {
+  outline: none;
+  border-color: var(--apple-accent);
+}
+
+.movimiento-caja-modal input[type="number"] {
+  font-size: 18px;
+  font-weight: 600;
+}
+
 /* Ticket Modal Styling */
 .ticket-modal {
   background: var(--apple-white);
@@ -1906,4 +1978,46 @@ img {
 
 .network-status i {
   font-size: 18px;
+}
+
+/* Text Colors */
+.text-success {
+  color: var(--success);
+}
+
+.text-error {
+  color: var(--error);
+}
+
+/* Caja Indicador en TopNav */
+.caja-indicador {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--apple-radius);
+  background: var(--apple-gray);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: default;
+  user-select: none;
+}
+
+.caja-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.caja-dot.open {
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+}
+
+.caja-dot.closed {
+  background: var(--error);
+}
+
+.caja-text {
+  color: var(--apple-text-secondary);
 }

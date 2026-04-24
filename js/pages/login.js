@@ -96,7 +96,30 @@ const LoginPage = {
 
     document.getElementById('btnAbrirCaja')?.addEventListener('click', async () => {
       const saldoInicial = document.getElementById('saldoInicial').value;
-      await CajaService.abrir(saldoInicial || 0);
+      const monto = parseFloat(saldoInicial) || 0;
+
+      const estadoCaja = await CajaService.abrir(saldoInicial || 0);
+
+      if (monto > 0) {
+        const movimientoVenta = {
+          clienteId: null,
+          cliente: 'Sistema - Apertura de Caja',
+          articulos: [],
+          items: 0,
+          mediosPago: [{ medio: 'Efectivo', monto: monto }],
+          descuento: 0,
+          subtotal: monto,
+          nota: 'Apertura de caja - Saldo inicial',
+          tipo: 'movimiento_caja',
+          monto: monto,
+          montoTotal: monto,
+          fecha: new Date().toISOString(),
+          usuario: AuthService?.getUser()?.email || 'sistema',
+          movimientoTipo: 'ingreso',
+          movimientoConcepto: 'Saldo inicial de caja'
+        };
+        await VentasService.create(movimientoVenta);
+      }
 
       Modal.close(modal);
 

@@ -48,6 +48,10 @@ const DashboardPage = {
             <i class="ti ti-credit-card"></i>
             Medios de Pago
           </button>
+          <button class="tab-apple" data-tab="caja">
+            <i class="ti ti-cash-register"></i>
+            Caja
+          </button>
           <button class="tab-apple" data-tab="ventas">
             <i class="ti ti-receipt"></i>
             Ventas
@@ -172,6 +176,16 @@ const DashboardPage = {
             <span class="metric-label-apple">Clientes</span>
           </div>
         </div>
+
+        <div class="metric-card-apple" id="cardCajaEstado" style="cursor: pointer;" title="Ver detalles de caja">
+          <div class="metric-icon-apple">
+            <i class="ti ti-cash-register"></i>
+          </div>
+          <div class="metric-info-apple">
+            <span class="metric-value-apple" id="metricCaja">Cargando...</span>
+            <span class="metric-label-apple">Caja</span>
+          </div>
+        </div>
       </div>
 
       <div class="charts-grid-apple">
@@ -247,6 +261,8 @@ const DashboardPage = {
     const clientesCount = await ClientesService.getCount();
     const ventasUltimosDias = await VentasService.getVentasUltimosDias(7);
     const mediosPago = await VentasService.getEstadisticasMediosPago();
+    const cajaResumen = await CajaService.getResumen();
+    const cajaAbierta = await CajaService.estaAbierta();
 
     document.getElementById('metricVentas').textContent = ventas;
     document.getElementById('metricIngresos').textContent = '$' + ingresos.toLocaleString('es-AR');
@@ -254,6 +270,19 @@ const DashboardPage = {
     document.getElementById('metricItemsProm').textContent = itemsProm;
     document.getElementById('metricStock').textContent = productosStock;
     document.getElementById('metricClientes').textContent = clientesCount;
+
+    const cajaCard = document.getElementById('cardCajaEstado');
+    if (cajaCard) {
+      const saldoCaja = cajaResumen.saldoTeorico || 0;
+      const ingresosDia = cajaResumen.movimientosIngresos || 0;
+      const egresosDia = cajaResumen.movimientosEgresos || 0;
+      const labelCaja = cajaAbierta 
+        ? `Abierta ($${saldoCaja.toLocaleString('es-AR')})`
+        : 'Cerrada';
+      document.getElementById('metricCaja').textContent = labelCaja;
+      document.getElementById('metricCaja').title = `Ingresos: $${ingresosDia.toLocaleString('es-AR')} | Egresos: $${egresosDia.toLocaleString('es-AR')} | Total: $${saldoCaja.toLocaleString('es-AR')}`;
+      cajaCard.style.background = cajaAbierta ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
+    }
 
     this.renderChartTopProductos(topProductos);
     this.renderChartPorHora(ventasPorHora);
@@ -1107,6 +1136,143 @@ const DashboardPage = {
     });
   },
 
+  async renderCaja() {
+    const content = document.getElementById('tabContent');
+    const cajaEstado = await CajaService.getEstado();
+    const movimientos = await CajaService.getMovimientos();
+    const resumen = await CajaService.getResumen();
+    const cajaAbierta = await CajaService.estaAbierta();
+
+    const movimientosHoy = movimientos.filter(m => {
+      const hoy = new Date().toISOString().split('T')[0];
+      return m.fecha.startsWith(hoy);
+    }).reverse();
+
+    content.innerHTML = `
+      <div class="apple-card">
+        <div class="apple-card-header">
+          <h3 class="apple-card-title">
+            <i class="ti ti-cash-register"></i>
+            Gestión de Caja
+          </h3>
+          <div style="display: flex; gap: 8px;">
+            ${cajaAbierta ? `
+              <button class="apple-btn" style="background: var(--error);" id="btnForzarCierre">
+                <i class="ti ti-power"></i>
+                Forzar Cierre
+              </button>
+            ` : `
+              <button class="apple-btn apple-btn-primary" id="btnAbrirCaja">
+                <i class="ti ti-plus"></i>
+                Abrir Caja
+              </button>
+            `}
+          </div>
+        </div>
+        <div class="apple-card-body">
+          <div class="metrics-grid-apple" style="margin-bottom: 20px;">
+            <div class="metric-card-apple">
+              <div class="metric-icon-apple">
+                <i class="ti ti-cash"></i>
+              </div>
+              <div class="metric-info-apple">
+                <span class="metric-value-apple">${cajaAbierta ? 'Abierta' : 'Cerrada'}</span>
+                <span class="metric-label-apple">Estado</span>
+              </div>
+            </div>
+            <div class="metric-card-apple">
+              <div class="metric-icon-apple">
+                <i class="ti ti-arrow-down"></i>
+              </div>
+              <div class="metric-info-apple">
+                <span class="metric-value-apple" style="color: var(--success);">$${resumen.movimientosIngresos?.toLocaleString('es-AR') || 0}</span>
+                <span class="metric-label-apple">Ingresos Hoy</span>
+              </div>
+            </div>
+            <div class="metric-card-apple">
+              <div class="metric-icon-apple">
+                <i class="ti ti-arrow-up"></i>
+              </div>
+              <div class="metric-info-apple">
+                <span class="metric-value-apple" style="color: var(--error);">$${resumen.movimientosEgresos?.toLocaleString('es-AR') || 0}</span>
+                <span class="metric-label-apple">Egresos Hoy</span>
+              </div>
+            </div>
+            <div class="metric-card-apple">
+              <div class="metric-icon-apple">
+                <i class="ti ti-cash"></i>
+              </div>
+              <div class="metric-info-apple">
+                <span class="metric-value-apple">$${resumen.saldoInicial?.toLocaleString('es-AR') || 0}</span>
+                <span class="metric-label-apple">Saldo Inicial</span>
+              </div>
+            </div>
+          </div>
+
+          <h4 style="margin: 20px 0 12px 0;">Movimientos de Hoy</h4>
+          <table class="table-apple">
+            <thead><tr><th>Hora</th><th>Tipo</th><th>Concepto</th><th>Método</th><th>Monto</th><th>Usuario</th></tr></thead>
+            <tbody id="movimientosTable">
+              ${movimientosHoy.length === 0 
+                ? '<tr><td colspan="6" class="empty-state">No hay movimientos hoy</td></tr>'
+                : movimientosHoy.map(m => `
+                  <tr>
+                    <td>${new Date(m.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td><span class="badge" style="background: ${m.tipo === 'ingreso' ? 'var(--success)' : 'var(--error)'}">${m.tipo === 'ingreso' ? 'Ingreso' : 'Egreso'}</span></td>
+                    <td>${m.concepto}</td>
+                    <td>${m.medio}</td>
+                    <td>$${m.monto.toLocaleString('es-AR')}</td>
+                    <td>${m.usuario || '-'}</td>
+                  </tr>
+                `).join('')
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('btnAbrirCaja')?.addEventListener('click', async () => {
+      const { value: saldo } = await this.promptMonto('Abrir Caja', 'Ingrese el saldo inicial:');
+      if (saldo && !isNaN(saldo)) {
+        await CajaService.abrir(saldo);
+        this.renderCaja();
+      }
+    });
+
+    document.getElementById('btnForzarCierre')?.addEventListener('click', async () => {
+      if (confirm('¿Forzar el cierre de caja? Esto cerrará la caja sin mostrar el detalle.')) {
+        await CajaService.cerrar(0);
+        this.renderCaja();
+      }
+    });
+  },
+
+  promptMonto(title, message) {
+    return new Promise(resolve => {
+      const content = `
+        <div class="input-group">
+          <label>${message}</label>
+          <input type="number" id="promptMonto" min="0" autofocus>
+        </div>
+      `;
+      const buttons = [
+        { id: 'btnConfirmar', text: 'Aceptar', type: 'primary' },
+        { id: 'btnCancelar', text: 'Cancelar', type: 'secondary' }
+      ];
+      const modal = Modal.show({ title, content, buttons });
+      document.getElementById('btnConfirmar')?.addEventListener('click', () => {
+        const value = parseFloat(document.getElementById('promptMonto')?.value) || 0;
+        Modal.close(modal);
+        resolve({ value });
+      });
+      document.getElementById('btnCancelar')?.addEventListener('click', () => {
+        Modal.close(modal);
+        resolve({ value: null });
+      });
+    });
+  },
+
   async renderCategorias() {
     const content = document.getElementById('tabContent');
     const categorias = await CategoriasService.getAll();
@@ -1222,9 +1388,16 @@ const DashboardPage = {
         case 'categorias': await this.renderCategorias(); break;
         case 'clientes': await this.renderClientes(); break;
         case 'medios': await this.renderMediosPago(); break;
+        case 'caja': await this.renderCaja(); break;
         case 'ventas': await this.renderVentas(); break;
         case 'negocio': await this.renderNegocio(); break;
       }
+    });
+
+    document.getElementById('cardCajaEstado')?.addEventListener('click', () => {
+      document.querySelectorAll('.tab-apple').forEach(t => t.classList.remove('active'));
+      document.querySelector('[data-tab="caja"]')?.classList.add('active');
+      this.renderCaja();
     });
   }
 };

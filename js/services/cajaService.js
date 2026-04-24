@@ -3,7 +3,9 @@ const CajaService = {
   STORAGE_KEY: 'caja_abierta_hoy',
 
   async getEstado() {
-    return await DataStore.read(this.filename) || this.getDefault();
+    const data = await DataStore.read(this.filename) || {};
+    const defaults = this.getDefault();
+    return { ...defaults, ...data };
   },
 
   getDefault() {
@@ -12,6 +14,9 @@ const CajaService = {
       abierta: false,
       fechaApertura: null,
       saldoInicial: 0,
+      movimientos: [],
+      movimientosIngresos: 0,
+      movimientosEgresos: 0,
       ventas: [],
       ventasEfectivo: 0,
       ventasTransferencia: 0,
@@ -44,12 +49,88 @@ const CajaService = {
     estado.fechaApertura = new Date().toISOString();
     estado.saldoInicial = parseFloat(saldoInicial) || 0;
 
+    if (estado.saldoInicial > 0) {
+      estado.movimientos.push({
+        id: DataStore.generateId('mov'),
+        tipo: 'ingreso',
+        concepto: 'Apertura de caja - Saldo inicial',
+        monto: estado.saldoInicial,
+        medio: 'Efectivo',
+        fecha: new Date().toISOString(),
+        usuario: AuthService?.getUser()?.email || 'sistema'
+      });
+      estado.movimientosIngresos = estado.saldoInicial;
+      estado.ventasEfectivo = estado.saldoInicial;
+    }
+
     await DataStore.write(this.filename, estado);
-    
+
     const hoy = new Date().toISOString().split('T')[0];
     localStorage.setItem(this.STORAGE_KEY, hoy);
-    
+
     return estado;
+  },
+
+  async agregarMovimiento(tipo, concepto, monto, medio = 'Efectivo') {
+    const estado = await this.getEstado();
+    if (!estado.abierta) return null;
+
+    const movimiento = {
+      id: DataStore.generateId('mov'),
+      tipo: tipo,
+      concepto: concepto,
+      monto: parseFloat(monto) || 0,
+      medio: medio,
+      fecha: new Date().toISOString(),
+      usuario: AuthService?.getUser()?.email || 'sistema'
+    };
+
+    estado.movimientos.push(movimiento);
+
+    if (tipo === 'ingreso') {
+      estado.movimientosIngresos += movimiento.monto;
+      if (medio === 'Efectivo') {
+        estado.ventasEfectivo += movimiento.monto;
+      } else if (medio === 'Transferencia') {
+        estado.ventasTransferencia += movimiento.monto;
+      } else if (medio === 'Débito' || medio === 'Debito') {
+        estado.ventasDebito += movimiento.monto;
+      } else if (medio === 'Crédito' || medio === 'Credito') {
+        estado.ventasCredito += movimiento.monto;
+      }
+    } else if (tipo === 'egreso') {
+      estado.movimientosEgresos += movimiento.monto;
+      if (medio === 'Efectivo') {
+        estado.ventasEfectivo -= movimiento.monto;
+      }
+    }
+
+    estado.total = estado.ventasEfectivo + estado.ventasTransferencia + estado.ventasDebito + estado.ventasCredito;
+
+    await DataStore.write(this.filename, estado);
+
+    return movimiento;
+  },
+
+  async getMovimientos() {
+    const estado = await this.getEstado();
+    return estado.movimientos || [];
+  },
+
+  async getIngresosDelDia() {
+    const hoy = new Date().toISOString().split('T')[0];
+    const movimientos = await this.getMovimientos();
+    return movimientos
+      .filter(m => m.fecha.startsWith(hoy) && m.tipo === 'ingreso')
+      .reduce((sum, m) => sum + m.monto, 0);
+  },
+
+  async getEgresosDelDia() {
+    const hoy = new Date().toISOString().split('T')[0];
+    const movimientos = await this.getMovimientos();
+    return movimientos
+      .filter(m => m.fecha.startsWith(hoy) && m.tipo === 'egreso')
+      .reduce((sum, m) => sum + m.monto, 0);
   },
 
   async agregarVenta(venta) {
@@ -104,20 +185,22 @@ const CajaService = {
 
   async getResumen() {
     const estado = await this.getEstado();
-    const saldoTeorico = estado.saldoInicial + estado.ventasEfectivo;
-    const diferencia = estado.saldoReal > 0 ? estado.saldoReal - saldoTeorico : null;
+    const diferencia = estado.saldoReal > 0 ? estado.saldoReal - estado.ventasEfectivo : null;
 
     return {
       saldoInicial: estado.saldoInicial,
+      movimientosIngresos: estado.movimientosIngresos || 0,
+      movimientosEgresos: estado.movimientosEgresos || 0,
       ventasEfectivo: estado.ventasEfectivo,
       ventasTransferencia: estado.ventasTransferencia,
       ventasDebito: estado.ventasDebito,
       ventasCredito: estado.ventasCredito,
       totalVentas: estado.total,
-      saldoTeorico: saldoTeorico,
+      saldoTeorico: estado.ventasEfectivo,
       saldoReal: estado.saldoReal,
       diferencia: diferencia,
-      cantidadVentas: estado.ventas.length
+      cantidadVentas: estado.ventas.length,
+      movimientos: estado.movimientos || []
     };
   },
 

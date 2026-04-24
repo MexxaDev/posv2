@@ -19,6 +19,10 @@ const TopNav = {
         </div>
         
         <div class="top-nav-user">
+          <div class="caja-indicador" id="cajaIndicador" title="Estado de caja">
+            <span class="caja-dot" id="cajaDot"></span>
+            <span class="caja-text" id="cajaText">Cargando...</span>
+          </div>
           <button class="top-nav-user-btn" id="userMenuBtn">
             <i class="ti ti-user"></i>
             <i class="ti ti-chevron-down"></i>
@@ -36,6 +40,30 @@ const TopNav = {
   
   setActive(page) {
     this.currentPage = page;
+  },
+  
+  async updateCajaIndicador() {
+    try {
+      const cajaAbierta = await CajaService.estaAbierta();
+      const resumen = await CajaService.getResumen();
+      const dot = document.getElementById('cajaDot');
+      const text = document.getElementById('cajaText');
+      
+      if (dot && text) {
+        if (cajaAbierta) {
+          dot.className = 'caja-dot open';
+          text.textContent = `Caja: $${(resumen.saldoTeorico || 0).toLocaleString('es-AR')}`;
+          text.title = 'Caja abierta';
+        } else {
+          dot.className = 'caja-dot closed';
+          text.textContent = 'Caja cerrada';
+          text.title = 'Caja cerrada';
+        }
+      }
+    } catch (e) {
+      const text = document.getElementById('cajaText');
+      if (text) text.textContent = 'Sin datos';
+    }
   },
   
   initEvents() {
@@ -69,6 +97,8 @@ const TopNav = {
         Router.navigate('login');
       });
     }
+
+    this.updateCajaIndicador();
   }
 };
 
